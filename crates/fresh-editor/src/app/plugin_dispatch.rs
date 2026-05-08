@@ -1426,6 +1426,22 @@ impl Editor {
             } => {
                 self.handle_replace_in_buffer(file_path, matches, replacement, callback_id);
             }
+
+            PluginCommand::MountWidgetPanel {
+                panel_id,
+                buffer_id,
+                spec,
+            } => {
+                self.handle_mount_widget_panel(panel_id, buffer_id, spec);
+            }
+
+            PluginCommand::UpdateWidgetPanel { panel_id, spec } => {
+                self.handle_update_widget_panel(panel_id, spec);
+            }
+
+            PluginCommand::UnmountWidgetPanel { panel_id } => {
+                self.handle_unmount_widget_panel(panel_id);
+            }
         }
         Ok(())
     }
@@ -3094,6 +3110,73 @@ impl Editor {
             }
             Err(e) => {
                 tracing::error!("Failed to set virtual buffer content: {}", e);
+            }
+        }
+    }
+
+    fn handle_mount_widget_panel(
+        &mut self,
+        panel_id: u64,
+        buffer_id: BufferId,
+        spec: fresh_core::api::WidgetSpec,
+    ) {
+        let entries = crate::widgets::render_spec(&spec);
+        self.widget_registry.mount(panel_id, buffer_id, spec);
+        if let Err(e) = self.set_virtual_buffer_content(buffer_id, entries) {
+            tracing::error!(
+                "Failed to render mounted widget panel {} into {:?}: {}",
+                panel_id,
+                buffer_id,
+                e
+            );
+        } else {
+            tracing::debug!(
+                "Mounted widget panel {} into buffer {:?}",
+                panel_id,
+                buffer_id
+            );
+        }
+    }
+
+    fn handle_update_widget_panel(&mut self, panel_id: u64, spec: fresh_core::api::WidgetSpec) {
+        let entries = crate::widgets::render_spec(&spec);
+        match self.widget_registry.update(panel_id, spec) {
+            Ok(buffer_id) => {
+                if let Err(e) = self.set_virtual_buffer_content(buffer_id, entries) {
+                    tracing::error!(
+                        "Failed to render updated widget panel {}: {}",
+                        panel_id,
+                        e
+                    );
+                }
+            }
+            Err(()) => {
+                tracing::debug!(
+                    "UpdateWidgetPanel for unknown panel {} ignored (not mounted)",
+                    panel_id
+                );
+            }
+        }
+    }
+
+    fn handle_unmount_widget_panel(&mut self, panel_id: u64) {
+        match self.widget_registry.unmount(panel_id) {
+            Some(buffer_id) => {
+                tracing::debug!(
+                    "Unmounted widget panel {} (was rendering into {:?})",
+                    panel_id,
+                    buffer_id
+                );
+                // Buffer lifetime is owned by the plugin (it created the
+                // virtual buffer before mounting). The plugin is
+                // responsible for closing/clearing it; we only forget our
+                // panel state.
+            }
+            None => {
+                tracing::debug!(
+                    "UnmountWidgetPanel for unknown panel {} ignored",
+                    panel_id
+                );
             }
         }
     }

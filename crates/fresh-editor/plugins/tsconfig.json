@@ -21,6 +21,7 @@
     "lib/search-utils.ts",
     "lib/types.ts",
     "lib/virtual-buffer-factory.ts",
+    "lib/widgets.ts",
     "astro-lsp.ts",
     "audit_mode.ts",
     "bash-lsp.ts",

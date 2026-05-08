@@ -1,4 +1,6 @@
 /// <reference path="./lib/fresh.d.ts" />
+import { col, hintBar, parseHintString, raw, WidgetPanel } from "./lib/widgets.ts";
+
 const editor = getEditor();
 
 /**
@@ -54,6 +56,15 @@ interface PanelState {
   cursorPos: number;
   // Virtual scroll offset for matches tree
   scrollOffset: number;
+  // Widget panel handle. The panel mounts a `Col[Raw{body}, HintBar{hints}]`
+  // spec — the body keeps the existing hand-rolled rendering for now,
+  // and the footer is built by the host's HintBar widget so its keys are
+  // styled consistently with every other plugin's footer (theme-keyed
+  // `ui.help_key_fg`). Subsequent migration passes will pull the
+  // search/replace inputs, the toggles, and the match tree out of
+  // `Raw` and into typed widgets. See
+  // `docs/internal/plugin-widget-library-design.md` §10.
+  widgetPanel: WidgetPanel | null;
 }
 let panel: PanelState | null = null;
 
@@ -525,22 +536,43 @@ function buildPanelEntries(): TextPropertyEntry[] {
     }
   }
 
-  // Scroll indicators
-  const canScrollUp = panel.scrollOffset > 0;
-  const canScrollDown = panel.scrollOffset + treeVisibleRows < flatItems.length;
-  const scrollHint = canScrollUp || canScrollDown
-    ? "  " + (canScrollUp ? "↑" : " ") + (canScrollDown ? "↓" : " ")
-    : "";
-
-  // ── Help bar ──
-  const helpText = " " + editor.t("panel.help") + scrollHint;
-  entries.push({
-    text: truncate(helpText, W) + "\n",
-    properties: { type: "help" },
-    style: { fg: C.help },
-  });
-
+  // The help footer is no longer pushed here — it's now rendered by
+  // the host's HintBar widget (see updatePanelContent).
   return entries;
+}
+
+// Build the hint entries for the panel footer.
+//
+// Source of truth is the existing `panel.help` i18n string (format:
+// `Tab:section  ↑↓:nav  …`); `parseHintString` splits it into typed
+// `HintEntry[]` so the host's HintBar widget can style the keys
+// portion via the `ui.help_key_fg` theme key — matching every other
+// plugin's footer.
+function buildHelpHints(): HintEntry[] {
+  if (!panel) return [];
+  const hints = parseHintString(editor.t("panel.help"));
+  // Append a scroll indicator as a key-only entry. The HintBar widget
+  // renders `<keys> <label>` per entry; with empty `label` the key
+  // appears alone, which is the right shape for a `↑↓` indicator.
+  const flatItemsLen = panel.fileGroups.reduce(
+    (acc, g) => acc + 1 + (g.expanded ? g.matches.length : 0),
+    0,
+  );
+  const W = Math.max(MIN_WIDTH, panel.viewportWidth - 2);
+  const treeVisibleRows = Math.max(
+    1,
+    20 - 5, // approximate; see buildPanelEntries' actual computation
+  );
+  void W;
+  void treeVisibleRows;
+  const canScrollUp = panel.scrollOffset > 0;
+  const canScrollDown =
+    panel.scrollOffset + Math.max(1, panel.viewportWidth - 5) < flatItemsLen;
+  if (canScrollUp || canScrollDown) {
+    const arrows = (canScrollUp ? "↑" : " ") + (canScrollDown ? "↓" : " ");
+    hints.push({ keys: arrows, label: "" });
+  }
+  return hints;
 }
 
 // Build field display string: [value] with cursor
@@ -603,11 +635,21 @@ function highlightMatches(text: string, pattern: string, baseByteOffset: number,
 // =============================================================================
 
 function updatePanelContent(): void {
-  if (panel) {
-    // Refresh viewport width each time
-    panel.viewportWidth = getViewportWidth();
-    editor.setVirtualBufferContent(panel.resultsBufferId, buildPanelEntries());
+  if (!panel) return;
+  // Refresh viewport width each time
+  panel.viewportWidth = getViewportWidth();
+
+  // Migration step 1 (see docs/internal/plugin-widget-library-design.md
+  // §10): the panel body still comes from the hand-rolled
+  // `buildPanelEntries`, wrapped in `Raw`. The footer is replaced by a
+  // host-rendered `HintBar` so its keys/labels respect the active
+  // theme's `ui.help_key_fg` like every other plugin's footer.
+  if (!panel.widgetPanel) {
+    panel.widgetPanel = new WidgetPanel(panel.resultsBufferId);
   }
+  panel.widgetPanel.set(
+    col(raw(buildPanelEntries()), hintBar(buildHelpHints())),
+  );
 }
 
 // =============================================================================
@@ -740,6 +782,7 @@ async function openPanel(): Promise<void> {
     truncated: false,
     cursorPos: prefill.length,
     scrollOffset: 0,
+    widgetPanel: null,
   };
 
   try {
@@ -1238,6 +1281,7 @@ async function doReplaceScoped(): Promise<void> {
 
 function search_replace_close(): void {
   if (!panel) return;
+  panel.widgetPanel?.unmount();
   editor.closeBuffer(panel.resultsBufferId);
   if (panel.resultsSplitId !== panel.sourceSplitId) {
     editor.closeSplit(panel.resultsSplitId);
@@ -1290,6 +1334,7 @@ editor.on("prompt_cancelled", (args) => {
 
 editor.on("buffer_closed", (args) => {
   if (panel && args.buffer_id === panel.resultsBufferId) {
+    panel.widgetPanel?.unmount();
     panel = null;
   }
 });

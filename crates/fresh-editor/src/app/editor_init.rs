@@ -1043,6 +1043,7 @@ impl Editor {
             previous_cursor_screen_pos: None,
             cursor_jump_animation: None,
             pending_vb_animations: Vec::new(),
+            widget_registry: crate::widgets::WidgetRegistry::new(),
         };
 
         t.phase("editor_struct_assembly");

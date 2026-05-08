@@ -1109,6 +1109,78 @@ pub enum MenuPosition {
     After(String),
 }
 
+// ===========================================================================
+// Widget library — plugin-facing declarative UI.
+//
+// Plugins describe a widget tree as a `WidgetSpec`; the host reconciles the
+// tree against the previous spec for the same panel and produces rendered
+// output. This is the foundation laid out in
+// `docs/internal/plugin-widget-library-design.md`.
+//
+// The set of widget kinds is intentionally narrow at v1 (`HintBar` and the
+// `Row`/`Col`/`Raw` composition primitives). Additional kinds (`Toggle`,
+// `Button`, `TextInput`, `List`, `Tree`, `Layer`, `Transient`, `Table`)
+// extend the enum without changing the `MountWidgetPanel`/`UpdateWidgetPanel`
+// IPC shape.
+// ===========================================================================
+
+/// One entry in a `HintBar` — a key chord plus its label.
+/// Renders as `<keys> <label>` with the key portion styled by the
+/// `ui.help_key_fg` theme key.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+#[ts(export, rename_all = "camelCase")]
+pub struct HintEntry {
+    /// The key chord, e.g. `"Tab"`, `"Alt+P"`, `"Esc"`.
+    pub keys: String,
+    /// The human-readable label for the action.
+    pub label: String,
+}
+
+/// Declarative widget tree. Each variant is one node; nested
+/// composition is via `Row { children }` / `Col { children }`.
+///
+/// `key` is the stable identifier used by the reconciler to match a
+/// node across `MountWidgetPanel` / `UpdateWidgetPanel` calls — when
+/// the plugin re-emits a Spec, instance state (cursor offset, scroll,
+/// expanded keys, hover) is preserved on nodes whose `key` matches.
+/// Plugins should provide stable keys for any widget that owns
+/// instance state; v1's `HintBar` is stateless so `key` is optional.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+#[ts(export)]
+pub enum WidgetSpec {
+    /// Horizontal layout: children laid out left-to-right.
+    Row {
+        children: Vec<WidgetSpec>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        key: Option<String>,
+    },
+    /// Vertical layout: children stacked top-to-bottom.
+    Col {
+        children: Vec<WidgetSpec>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        key: Option<String>,
+    },
+    /// Keyboard-hint footer (one row, comma-separated `<keys> <label>` items).
+    HintBar {
+        entries: Vec<HintEntry>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        key: Option<String>,
+    },
+    /// Imperative-virtual-buffer escape hatch. The plugin supplies
+    /// `TextPropertyEntry[]` exactly as it would for
+    /// `setVirtualBufferContent`; the host inlines those entries into
+    /// the rendered panel without further interpretation. Used during
+    /// migration to wrap existing hand-rolled rendering inside a new
+    /// widget panel.
+    Raw {
+        entries: Vec<crate::text_property::TextPropertyEntry>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        key: Option<String>,
+    },
+}
+
 /// Plugin command - allows plugins to send commands to the editor
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -2450,6 +2522,30 @@ pub enum PluginCommand {
     /// killed process may leak (see Q-C2 in
     /// `DEVCONTAINER_SPEC_GAP_PLAN.md`).
     KillHostProcess { process_id: u64 },
+
+    /// Mount a declarative widget panel inside an existing virtual
+    /// buffer. The host renders the `WidgetSpec` and writes the
+    /// resulting text-property entries into the buffer. The
+    /// `panel_id` is plugin-allocated (any unique u64 for that
+    /// plugin) and is used to address the panel for later
+    /// `UpdateWidgetPanel` / `UnmountWidgetPanel` calls.
+    ///
+    /// See `docs/internal/plugin-widget-library-design.md`.
+    MountWidgetPanel {
+        panel_id: u64,
+        buffer_id: BufferId,
+        spec: WidgetSpec,
+    },
+
+    /// Replace the spec of a previously-mounted widget panel.
+    /// The reconciler diffs against the previous spec and applies
+    /// the minimum mutation; widget instance state is preserved on
+    /// nodes whose `key` matches.
+    UpdateWidgetPanel { panel_id: u64, spec: WidgetSpec },
+
+    /// Tear down a widget panel. Subsequent `UpdateWidgetPanel`
+    /// calls for the same `panel_id` are no-ops.
+    UnmountWidgetPanel { panel_id: u64 },
 }
 
 impl PluginCommand {

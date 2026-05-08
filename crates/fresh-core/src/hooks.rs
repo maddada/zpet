@@ -426,6 +426,30 @@ pub enum HookArgs {
 
     /// Terminal focus was gained (e.g. user switched back to the editor)
     FocusGained {},
+
+    /// A widget mounted via `MountWidgetPanel` emitted a semantic event.
+    /// Plugins subscribe via `editor.on("widget_event", "<handler>")`
+    /// and dispatch on `(panel_id, widget_key, event_type)`.
+    ///
+    /// `event_type` is one of: `"activate"`, `"toggle"`, `"change"`,
+    /// `"submit"`, `"hover"`, `"dismiss"`. `payload` is event-specific
+    /// JSON (e.g. `{ "value": "search text" }` for `change`).
+    ///
+    /// At v1 only widgets that have user-driven behaviour fire this
+    /// hook. The HintBar widget is read-only and does not emit events.
+    WidgetEvent {
+        /// The plugin-allocated panel ID from the original
+        /// `MountWidgetPanel`.
+        panel_id: u64,
+        /// The stable `key` of the widget node that fired the event,
+        /// or empty when the event originates from the panel root.
+        widget_key: String,
+        /// The kind of event — see variants above.
+        event_type: String,
+        /// Event-specific JSON payload.
+        #[serde(default)]
+        payload: serde_json::Value,
+    },
 }
 
 /// Information about a single line for the LinesChanged hook

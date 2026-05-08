@@ -706,6 +706,33 @@ type PluginAnimationKind = {
 	durationMs: number;
 	delayMs: number;
 };
+type HintEntry = {
+	/**
+	* The key chord, e.g. `"Tab"`, `"Alt+P"`, `"Esc"`.
+	*/
+	keys: string;
+	/**
+	* The human-readable label for the action.
+	*/
+	label: string;
+};
+type WidgetSpec = {
+	"kind": "row";
+	children: Array<WidgetSpec>;
+	key?: string | null;
+} | {
+	"kind": "col";
+	children: Array<WidgetSpec>;
+	key?: string | null;
+} | {
+	"kind": "hintBar";
+	entries: Array<HintEntry>;
+	key?: string | null;
+} | {
+	"kind": "raw";
+	entries: Array<TextPropertyEntry>;
+	key?: string | null;
+};
 type AuthorityFilesystem = {
 	kind: "local";
 };
@@ -2066,6 +2093,28 @@ interface EditorAPI {
 	* Get text properties at cursor position (returns JS array)
 	*/
 	getTextPropertiesAtCursor(bufferId: number): TextPropertiesAtCursor;
+	/**
+	* Mount a declarative widget panel inside a virtual buffer.
+	* 
+	* `spec` is a `WidgetSpec` JSON tree (see fresh.d.ts for the
+	* shape). The host renders the spec into the buffer; subsequent
+	* `updateWidgetPanel` calls re-render the panel against the
+	* previously-mounted spec.
+	* 
+	* Returns true on successful queue, false if the IPC channel is
+	* closed.
+	*/
+	mountWidgetPanel(panelId: number, bufferId: number, specObj: unknown): boolean;
+	/**
+	* Replace the spec of a previously-mounted widget panel.
+	* No-op if the panel id was never mounted.
+	*/
+	updateWidgetPanel(panelId: number, specObj: unknown): boolean;
+	/**
+	* Unmount a previously-mounted widget panel. The plugin retains
+	* ownership of the underlying virtual buffer.
+	*/
+	unmountWidgetPanel(panelId: number): boolean;
 	/**
 	* Spawn a process (async, returns request_id)
 	*/

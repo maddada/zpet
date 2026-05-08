@@ -1243,6 +1243,15 @@ pub struct Editor {
     /// `split_areas` has been recomputed, so the animation starts on
     /// the very first frame the buffer actually occupies screen space.
     pub(crate) pending_vb_animations: Vec<(u64, BufferId, fresh_core::api::PluginAnimationKind)>,
+
+    /// Plugin widget panels mounted via `MountWidgetPanel`.
+    ///
+    /// One entry per active panel. The registry holds the most recent
+    /// `WidgetSpec` per panel so future updates can reconcile against
+    /// it and so a theme change can re-render every panel without
+    /// the originating plugin needing to re-emit. See
+    /// `docs/internal/plugin-widget-library-design.md`.
+    pub(crate) widget_registry: crate::widgets::WidgetRegistry,
 }
 
 /// A file that should be opened after the TUI starts

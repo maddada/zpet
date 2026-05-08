@@ -4300,6 +4300,78 @@ impl JsEditorApi {
         get_text_properties_at_cursor_typed(&self.state_snapshot, buffer_id)
     }
 
+    /// Mount a declarative widget panel inside a virtual buffer.
+    ///
+    /// `spec` is a `WidgetSpec` JSON tree (see fresh.d.ts for the
+    /// shape). The host renders the spec into the buffer; subsequent
+    /// `updateWidgetPanel` calls re-render the panel against the
+    /// previously-mounted spec.
+    ///
+    /// Returns true on successful queue, false if the IPC channel is
+    /// closed.
+    #[qjs(rename = "mountWidgetPanel")]
+    pub fn mount_widget_panel<'js>(
+        &self,
+        ctx: rquickjs::Ctx<'js>,
+        panel_id: f64,
+        buffer_id: u32,
+        spec_obj: rquickjs::Value<'js>,
+    ) -> rquickjs::Result<bool> {
+        let json = js_to_json(&ctx, spec_obj);
+        let spec: fresh_core::api::WidgetSpec = match serde_json::from_value(json) {
+            Ok(s) => s,
+            Err(e) => {
+                tracing::error!("mountWidgetPanel: invalid spec: {}", e);
+                return Ok(false);
+            }
+        };
+        Ok(self
+            .command_sender
+            .send(PluginCommand::MountWidgetPanel {
+                panel_id: panel_id as u64,
+                buffer_id: BufferId(buffer_id as usize),
+                spec,
+            })
+            .is_ok())
+    }
+
+    /// Replace the spec of a previously-mounted widget panel.
+    /// No-op if the panel id was never mounted.
+    #[qjs(rename = "updateWidgetPanel")]
+    pub fn update_widget_panel<'js>(
+        &self,
+        ctx: rquickjs::Ctx<'js>,
+        panel_id: f64,
+        spec_obj: rquickjs::Value<'js>,
+    ) -> rquickjs::Result<bool> {
+        let json = js_to_json(&ctx, spec_obj);
+        let spec: fresh_core::api::WidgetSpec = match serde_json::from_value(json) {
+            Ok(s) => s,
+            Err(e) => {
+                tracing::error!("updateWidgetPanel: invalid spec: {}", e);
+                return Ok(false);
+            }
+        };
+        Ok(self
+            .command_sender
+            .send(PluginCommand::UpdateWidgetPanel {
+                panel_id: panel_id as u64,
+                spec,
+            })
+            .is_ok())
+    }
+
+    /// Unmount a previously-mounted widget panel. The plugin retains
+    /// ownership of the underlying virtual buffer.
+    #[qjs(rename = "unmountWidgetPanel")]
+    pub fn unmount_widget_panel(&self, panel_id: f64) -> bool {
+        self.command_sender
+            .send(PluginCommand::UnmountWidgetPanel {
+                panel_id: panel_id as u64,
+            })
+            .is_ok()
+    }
+
     // === Async Operations ===
 
     /// Spawn a process (async, returns request_id)

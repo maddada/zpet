@@ -128,6 +128,11 @@ fn get_type_decl(type_name: &str) -> Option<String> {
         "InlineOverlay" => Some(InlineOverlay::decl(&cfg)),
         "StyledText" => Some(fresh_core::api::StyledText::decl(&cfg)),
 
+        // Widget library types — declarative plugin UI.
+        // See docs/internal/plugin-widget-library-design.md.
+        "WidgetSpec" => Some(fresh_core::api::WidgetSpec::decl(&cfg)),
+        "HintEntry" => Some(fresh_core::api::HintEntry::decl(&cfg)),
+
         // Authority — payload schema for `editor.setAuthority(...)`.
         // Hand-written because the authoritative struct lives in
         // `fresh-editor` and this crate must not depend on it
@@ -242,6 +247,9 @@ const DEPENDENCY_TYPES: &[&str] = &[
     "AnimationRect",                  // Used by animateArea
     "PluginAnimationEdge",            // Used by PluginAnimationKind
     "PluginAnimationKind",            // Used by animateArea/animateVirtualBuffer
+    // Widget library types (see docs/internal/plugin-widget-library-design.md)
+    "HintEntry",                      // Used by WidgetSpec::HintBar
+    "WidgetSpec",                     // Used by mountWidgetPanel/updateWidgetPanel
 ];
 
 /// Collect TypeScript type declarations based on referenced types from proc macro

@@ -51,6 +51,11 @@ pub mod server;
 #[cfg(any(feature = "runtime", feature = "wasm", feature = "dev-bins"))]
 pub mod view;
 
+// Plugin widget runtime — declarative widget tree mounted by plugins
+// via MountWidgetPanel/UpdateWidgetPanel/UnmountWidgetPanel. Pure Rust,
+// no UI dependencies, so always available.
+pub mod widgets;
+
 // GUI mode - native window with wgpu rendering
 #[cfg(feature = "gui")]
 pub mod gui;
