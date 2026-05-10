@@ -3722,14 +3722,11 @@ fn real_main() -> AnyhowResult<()> {
                 release_checker::CURRENT_VERSION,
                 update_result.latest_version
             );
-            if let Some(cmd) = update_result.install_method.update_command() {
-                eprintln!("Update with: {}", cmd);
-            } else {
-                eprintln!(
-                    "Download from: https://github.com/sinelaw/fresh/releases/tag/v{}",
-                    update_result.latest_version
-                );
-            }
+            let cmd = update_result
+                .install_method
+                .update_command()
+                .unwrap_or(release_checker::HOMEBREW_UPDATE_COMMAND);
+            eprintln!("Update with: {}", cmd);
             eprintln!();
         }
     }

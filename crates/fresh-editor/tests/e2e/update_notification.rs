@@ -1,6 +1,7 @@
 //! E2E tests for the update notification UI
 
 use crate::common::harness::EditorTestHarness;
+use fresh::config::Config;
 use fresh::services::release_checker::{
     start_periodic_update_check_with_interval, CURRENT_VERSION,
 };
@@ -61,6 +62,23 @@ fn next_patch_version() -> String {
     }
 }
 
+fn bottom_terminal_rows(harness: &EditorTestHarness) -> String {
+    let screen = harness.screen_to_string();
+    let lines: Vec<&str> = screen.lines().collect();
+    lines
+        .iter()
+        .skip(lines.len().saturating_sub(2))
+        .copied()
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn update_harness(width: u16, height: u16) -> EditorTestHarness {
+    let mut config = Config::default();
+    config.editor.show_status_bar = true;
+    EditorTestHarness::with_config(width, height, config).unwrap()
+}
+
 #[test]
 fn test_update_notification_appears_in_status_bar() {
     // Start a mock server that returns a version higher than current
@@ -68,7 +86,7 @@ fn test_update_notification_appears_in_status_bar() {
     let (stop_tx, url) = start_mock_release_server(&next_version);
 
     // Create a test harness with enough width to show the update notification
-    let mut harness = EditorTestHarness::new(100, 24).unwrap();
+    let mut harness = update_harness(100, 24);
 
     // Create an update checker pointing to our mock server
     let time_source = TestTimeSource::shared();
@@ -102,18 +120,24 @@ fn test_update_notification_appears_in_status_bar() {
 
     // Render and check the status bar contains the update notification
     harness.render().unwrap();
-    let status_bar = harness.get_status_bar();
+    let status_bar = bottom_terminal_rows(&harness);
 
-    // The status bar should contain "Update:" and the version
+    // The bottom of the terminal should contain "Update:", the version, and the command.
     assert!(
         status_bar.contains("Update:"),
-        "Status bar should contain 'Update:' indicator. Status bar: '{}'",
-        status_bar
+        "Status bar should contain 'Update:' indicator. Status bar: '{}'\nScreen:\n{}",
+        status_bar,
+        harness.screen_to_string()
     );
     assert!(
         status_bar.contains(&next_version),
         "Status bar should contain version '{}'. Status bar: '{}'",
         next_version,
+        status_bar
+    );
+    assert!(
+        status_bar.contains("brew upgrade zapet"),
+        "Status bar should include the brew update command. Status bar: '{}'",
         status_bar
     );
 
@@ -127,7 +151,7 @@ fn test_update_notification_not_shown_when_current() {
     // Start a mock server that returns the current version (no update)
     let (stop_tx, url) = start_mock_release_server(CURRENT_VERSION);
 
-    let mut harness = EditorTestHarness::new(100, 24).unwrap();
+    let mut harness = update_harness(100, 24);
 
     let time_source = TestTimeSource::shared();
     let temp_dir = tempdir().unwrap();
@@ -160,7 +184,7 @@ fn test_update_notification_not_shown_when_current() {
     );
 
     harness.render().unwrap();
-    let status_bar = harness.get_status_bar();
+    let status_bar = bottom_terminal_rows(&harness);
 
     // Status bar should NOT contain "Update:"
     assert!(
@@ -179,7 +203,7 @@ fn test_update_notification_positioned_near_ctrl_p() {
     let next_version = next_patch_version();
     let (stop_tx, url) = start_mock_release_server(&next_version);
 
-    let mut harness = EditorTestHarness::new(120, 24).unwrap();
+    let mut harness = update_harness(120, 24);
 
     let time_source = TestTimeSource::shared();
     let temp_dir = tempdir().unwrap();
@@ -202,7 +226,11 @@ fn test_update_notification_positioned_near_ctrl_p() {
     }
 
     harness.render().unwrap();
-    let status_bar = harness.get_status_bar();
+    let screen = harness.screen_to_string();
+    let status_bar = screen
+        .lines()
+        .find(|line| line.contains("Update:") && line.contains("Ctrl+P"))
+        .unwrap_or("");
 
     // Both "Update:" and "Ctrl+P" should be present
     let has_update = status_bar.contains("Update:");

@@ -923,9 +923,9 @@ impl StatusBarRenderer {
                 })
             }
             StatusBarElement::Update => {
-                let version = ctx.update_available?;
+                let update_message = ctx.update_available?;
                 Some(RenderedElement {
-                    text: format!(" {} ", t!("status.update_available", version = version)),
+                    text: format!(" {} ", update_message),
                     kind: ElementKind::Update,
                 })
             }

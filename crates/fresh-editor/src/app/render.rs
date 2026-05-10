@@ -677,8 +677,23 @@ impl Editor {
         let keybindings_cloned = self.keybindings.read().unwrap().clone(); // Clone the keybindings
         let chord_state_cloned = self.chord_state.clone(); // Clone the chord state
 
-        // Get update availability info
-        let update_available = self.latest_version().map(|v| v.to_string());
+        // Get update availability info. If the install method is unknown,
+        // default to Homebrew because Zapet's primary distribution is brew.
+        let update_available = self
+            .get_update_result()
+            .filter(|result| result.update_available)
+            .map(|result| {
+                let label = t!(
+                    "status.update_available",
+                    version = result.latest_version.as_str()
+                )
+                .to_string();
+                let command = result
+                    .install_method
+                    .update_command()
+                    .unwrap_or(crate::services::release_checker::HOMEBREW_UPDATE_COMMAND);
+                format!("{label} | {command}")
+            });
 
         // Render status bar (hidden when toggled off, or when suggestions/file browser popup is shown)
         if self.status_bar_visible && !has_suggestions && !has_file_browser {

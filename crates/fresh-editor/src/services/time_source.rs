@@ -6,7 +6,7 @@
 //!
 //! See `docs/internal/TIMESOURCE_DESIGN.md` for the full design document.
 
-use chrono::{NaiveDate, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -24,8 +24,13 @@ pub trait TimeSource: Send + Sync + std::fmt::Debug {
     /// In tests, this may be a no-op or advance logical time.
     fn sleep(&self, duration: Duration);
 
+    /// Get the current UTC wall-clock time.
+    fn now_utc(&self) -> DateTime<Utc>;
+
     /// Get today's date.
-    fn today_date(&self) -> NaiveDate;
+    fn today_date(&self) -> NaiveDate {
+        self.now_utc().date_naive()
+    }
 
     /// Calculate elapsed time since an earlier instant.
     fn elapsed_since(&self, earlier: Instant) -> Duration {
@@ -61,8 +66,8 @@ impl TimeSource for RealTimeSource {
         std::thread::sleep(duration);
     }
 
-    fn today_date(&self) -> NaiveDate {
-        Utc::now().date_naive()
+    fn now_utc(&self) -> DateTime<Utc> {
+        Utc::now()
     }
 }
 
@@ -155,12 +160,11 @@ impl TimeSource for TestTimeSource {
         self.advance(duration);
     }
 
-    fn today_date(&self) -> NaiveDate {
-        // Calculate days elapsed from logical time
-        let elapsed_days = (self.elapsed().as_secs() / 86400) as i64;
-        self.base_date
-            .checked_add_signed(chrono::Duration::days(elapsed_days))
-            .unwrap_or(self.base_date)
+    fn now_utc(&self) -> DateTime<Utc> {
+        let base = self.base_date.and_hms_opt(0, 0, 0).unwrap();
+        let elapsed =
+            chrono::Duration::from_std(self.elapsed()).unwrap_or_else(|_| chrono::Duration::zero());
+        DateTime::from_naive_utc_and_offset(base + elapsed, Utc)
     }
 }
 

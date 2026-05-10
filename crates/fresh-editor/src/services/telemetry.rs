@@ -101,7 +101,7 @@ fn write_stamp_file(data_dir: &std::path::Path, unique_id: &str, today: NaiveDat
     }
 }
 
-/// Check if we should run the daily check (telemetry + update).
+/// Check if we should send the daily telemetry event.
 /// Returns Some(unique_id) if we should proceed, None if already done today.
 pub fn should_run_daily_check(
     time_source: &dyn TimeSource,
@@ -134,7 +134,7 @@ pub fn track_open(unique_id: &str) {
     let event = Event {
         version: Some(env!("CARGO_PKG_VERSION")),
         os: Some(format!("{}-{}", OS, ARCH)),
-        command: Some("fresh"),
+        command: Some("zapet"),
         value: std::env::var("TERM").ok(),
         uid: Some(unique_id.to_string()),
     };

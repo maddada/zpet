@@ -1,5 +1,35 @@
 # Release Notes
 
+## 0.3.7
+
+### Improvements
+
+* **Zapet update checks now point at Zapet releases**: The updater now checks `maddada/zapet` instead of upstream Fresh and identifies itself as `zapet-update-checker`.
+
+* **Update notices show the Homebrew command**: The status bar and startup update message now show `brew upgrade zapet` as the default upgrade path, including for unknown install methods.
+
+* **Update checks are debounced every six hours**: Update checks now use their own six-hour stamp file, separate from daily telemetry, so Zapet can notice releases sooner without sending telemetry more than once per day.
+
+* **Telemetry reports the Zapet command name**: The anonymous open event now reports `zapet` instead of `fresh`.
+
+### Under the Hood
+
+* **Test time sources expose full UTC timestamps**: Shared time sources now provide `now_utc()`, keeping date helpers derived from a single clock and making interval-based update-check tests deterministic.
+
+## 0.3.6
+
+### Improvements
+
+* **Ctrl/Cmd-click file opening**: Absolute paths, `file://` URLs, and Markdown link targets can be opened from the editor with the path-opening mouse modifier.
+
+* **Mac-friendly terminal key handling**: Command chords are normalized to Control bindings where terminals forward them, and Option-arrow escape forms map to word navigation.
+
+* **Lean Zapet defaults**: Menu/tab/status bars, whitespace markers, and cursor animations default off for a quieter prompt-editing surface.
+
+* **Shift+Enter inserts a newline**: The default keymap now treats Shift+Enter like Enter in normal editing contexts.
+
+* **Terminal theme cleanup**: Semantic highlights keep bold styling without forcing underline.
+
 ## 0.3.5
 
 ### Improvements

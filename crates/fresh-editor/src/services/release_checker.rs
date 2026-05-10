@@ -4,10 +4,13 @@
 //! - Check for new releases by fetching a GitHub releases API endpoint
 //! - Detect the installation method (Homebrew, npm, cargo, etc.) based on executable path
 //! - Provide appropriate update commands based on installation method
-//! - Daily update checking (debounced via stamp file)
+//! - Six-hour update checking (debounced via stamp file)
 
 use super::time_source::SharedTimeSource;
+use chrono::{DateTime, Utc};
 use std::env;
+use std::fs;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{self, Receiver, TryRecvError};
 use std::thread::{self, JoinHandle};
@@ -16,8 +19,16 @@ use std::time::Duration;
 /// The current version of the editor
 pub const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// Default GitHub releases API URL for the fresh editor
-pub const DEFAULT_RELEASES_URL: &str = "https://api.github.com/repos/sinelaw/fresh/releases/latest";
+/// Default GitHub releases API URL for Zapet.
+pub const DEFAULT_RELEASES_URL: &str = "https://api.github.com/repos/maddada/zapet/releases/latest";
+
+/// How often Zapet may contact the releases endpoint.
+pub const UPDATE_CHECK_INTERVAL: Duration = Duration::from_secs(6 * 60 * 60);
+
+/// Homebrew command shown as the default update path.
+pub const HOMEBREW_UPDATE_COMMAND: &str = "brew upgrade zapet";
+
+const UPDATE_STAMP_FILE_NAME: &str = "update_check_stamp";
 
 /// Installation method detection result
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -40,10 +51,10 @@ impl InstallMethod {
     /// Get the update command for this installation method
     pub fn update_command(&self) -> Option<&'static str> {
         Some(match self {
-            Self::Homebrew => " brew upgrade fresh-editor",
-            Self::Cargo => "cargo install --locked fresh-editor",
-            Self::Npm => "npm update -g @fresh-editor/fresh-editor",
-            Self::Aur => "yay -Syu fresh-editor  # or use your AUR helper",
+            Self::Homebrew => HOMEBREW_UPDATE_COMMAND,
+            Self::Cargo => "cargo install --locked zapet",
+            Self::Npm => "npm update -g zapet",
+            Self::Aur => "yay -Syu zapet  # or use your AUR helper",
             Self::PackageManager => "Update using your system package manager",
             Self::Unknown => return None,
         })
@@ -97,7 +108,7 @@ impl UpdateCheckHandle {
 
 /// Handle to an update checker running in the background.
 ///
-/// Runs a single check at startup (if not already done today).
+/// Runs a single check at startup (if not already done in the last six hours).
 /// Results are available via `poll_result()`.
 pub struct UpdateChecker {
     /// Receiver for update check results
@@ -111,6 +122,90 @@ pub struct UpdateChecker {
 
 /// Backwards compatibility alias
 pub type PeriodicUpdateChecker = UpdateChecker;
+
+fn update_stamp_file_path(data_dir: &Path) -> PathBuf {
+    data_dir.join("fresh").join(UPDATE_STAMP_FILE_NAME)
+}
+
+fn read_update_stamp_file(data_dir: &Path) -> Option<DateTime<Utc>> {
+    let content = fs::read_to_string(update_stamp_file_path(data_dir)).ok()?;
+    DateTime::parse_from_rfc3339(content.trim())
+        .ok()
+        .map(|dt| dt.with_timezone(&Utc))
+}
+
+fn write_update_stamp_file(data_dir: &Path, checked_at: DateTime<Utc>) -> bool {
+    let path = update_stamp_file_path(data_dir);
+    if let Some(parent) = path.parent() {
+        if let Err(e) = fs::create_dir_all(parent) {
+            tracing::debug!("Failed to create update stamp directory: {}", e);
+            return false;
+        }
+    }
+
+    match fs::File::create(&path).and_then(|mut f| f.write_all(checked_at.to_rfc3339().as_bytes()))
+    {
+        Ok(()) => true,
+        Err(e) => {
+            tracing::debug!("Failed to write update stamp file: {}", e);
+            false
+        }
+    }
+}
+
+fn should_run_update_check(
+    time_source: &dyn super::time_source::TimeSource,
+    data_dir: &Path,
+    interval: Duration,
+) -> bool {
+    let now = time_source.now_utc();
+    if let Some(last_checked) = read_update_stamp_file(data_dir) {
+        let within_interval = now
+            .signed_duration_since(last_checked)
+            .to_std()
+            .map(|elapsed| elapsed < interval)
+            .unwrap_or(true);
+        if within_interval {
+            tracing::debug!("Update check already done within interval, skipping");
+            return false;
+        }
+    }
+
+    let _ = write_update_stamp_file(data_dir, now);
+    true
+}
+
+fn start_update_checker_with_interval(
+    releases_url: &str,
+    check_interval: Duration,
+    time_source: SharedTimeSource,
+    data_dir: PathBuf,
+) -> UpdateChecker {
+    tracing::debug!("Starting update checker");
+    let url = releases_url.to_string();
+    let (tx, rx) = mpsc::channel();
+
+    let handle = thread::spawn(move || {
+        if let Some(unique_id) =
+            super::telemetry::should_run_daily_check(time_source.as_ref(), &data_dir)
+        {
+            super::telemetry::track_open(&unique_id);
+        }
+
+        if should_run_update_check(time_source.as_ref(), &data_dir, check_interval) {
+            let result = check_for_update(&url);
+            // Receiver may be dropped if checker is dropped before result arrives.
+            #[allow(clippy::let_underscore_must_use)]
+            let _ = tx.send(result);
+        }
+    });
+
+    UpdateChecker {
+        receiver: rx,
+        thread: handle,
+        last_result: None,
+    }
+}
 
 impl UpdateChecker {
     /// Poll for a new update check result without blocking.
@@ -161,54 +256,33 @@ impl UpdateChecker {
 
 /// Start an update checker that runs once at startup.
 ///
-/// The check respects daily debouncing via the stamp file - if already
-/// checked today, no network request is made.
+/// The check respects six-hour debouncing via the stamp file - if recently
+/// checked, no network request is made.
 /// Results are available via `poll_result()` on the returned handle.
 pub fn start_periodic_update_check(
     releases_url: &str,
     time_source: SharedTimeSource,
     data_dir: PathBuf,
 ) -> UpdateChecker {
-    tracing::debug!("Starting update checker");
-    let url = releases_url.to_string();
-    let (tx, rx) = mpsc::channel();
-
-    let handle = thread::spawn(move || {
-        if let Some(unique_id) =
-            super::telemetry::should_run_daily_check(time_source.as_ref(), &data_dir)
-        {
-            super::telemetry::track_open(&unique_id);
-            let result = check_for_update(&url);
-            // Receiver may be dropped if checker is dropped before result arrives.
-            #[allow(clippy::let_underscore_must_use)]
-            let _ = tx.send(result);
-        }
-    });
-
-    UpdateChecker {
-        receiver: rx,
-        thread: handle,
-        last_result: None,
-    }
+    start_update_checker_with_interval(releases_url, UPDATE_CHECK_INTERVAL, time_source, data_dir)
 }
 
 /// Start an update checker (for testing with custom parameters).
 #[doc(hidden)]
 pub fn start_periodic_update_check_with_interval(
     releases_url: &str,
-    _check_interval: Duration,
+    check_interval: Duration,
     time_source: SharedTimeSource,
     data_dir: PathBuf,
 ) -> UpdateChecker {
-    // check_interval is ignored - debouncing is handled by stamp file
-    start_periodic_update_check(releases_url, time_source, data_dir)
+    start_update_checker_with_interval(releases_url, check_interval, time_source, data_dir)
 }
 
 /// Start a background update check
 ///
 /// Returns a handle that can be used to query the result later.
 /// The check runs in a background thread and won't block.
-/// Respects daily debouncing - if already checked today, no result will be sent.
+/// Respects six-hour debouncing - if recently checked, no result will be sent.
 pub fn start_update_check(
     releases_url: &str,
     time_source: SharedTimeSource,
@@ -223,6 +297,9 @@ pub fn start_update_check(
             super::telemetry::should_run_daily_check(time_source.as_ref(), &data_dir)
         {
             super::telemetry::track_open(&unique_id);
+        }
+
+        if should_run_update_check(time_source.as_ref(), &data_dir, UPDATE_CHECK_INTERVAL) {
             let result = check_for_update(&url);
             // Receiver may be dropped if handle is dropped before result arrives.
             #[allow(clippy::let_underscore_must_use)]
@@ -245,7 +322,7 @@ pub fn fetch_latest_version(url: &str) -> Result<String, String> {
         .new_agent();
     let response = agent
         .get(url)
-        .header("User-Agent", "fresh-editor-update-checker")
+        .header("User-Agent", "zapet-update-checker")
         .header("Accept", "application/vnd.github.v3+json")
         .call()
         .map_err(|e| {
@@ -426,28 +503,28 @@ mod tests {
     fn test_detect_install_method() {
         let cases = [
             (
-                "/opt/homebrew/Cellar/fresh/0.1.26/bin/fresh",
+                "/opt/homebrew/Cellar/zapet/0.3.6/bin/zapet",
                 InstallMethod::Homebrew,
             ),
             (
-                "/usr/local/Cellar/fresh/0.1.26/bin/fresh",
+                "/opt/homebrew/Cellar/fresh/0.1.26/bin/fresh",
                 InstallMethod::Homebrew,
             ),
             (
                 "/home/linuxbrew/.linuxbrew/bin/fresh",
                 InstallMethod::Homebrew,
             ),
-            ("/home/user/.cargo/bin/fresh", InstallMethod::Cargo),
+            ("/home/user/.cargo/bin/zapet", InstallMethod::Cargo),
             (
-                "C:\\Users\\user\\.cargo\\bin\\fresh.exe",
+                "C:\\Users\\user\\.cargo\\bin\\zapet.exe",
                 InstallMethod::Cargo,
             ),
             (
-                "/usr/local/lib/node_modules/fresh-editor/bin/fresh",
+                "/usr/local/lib/node_modules/zapet/bin/zapet",
                 InstallMethod::Npm,
             ),
-            ("/usr/local/bin/fresh", InstallMethod::PackageManager),
-            ("/home/user/downloads/fresh", InstallMethod::Unknown),
+            ("/usr/local/bin/zapet", InstallMethod::PackageManager),
+            ("/home/user/downloads/zapet", InstallMethod::Unknown),
         ];
         for (path, expected) in cases {
             assert_eq!(
@@ -457,6 +534,54 @@ mod tests {
                 path
             );
         }
+    }
+
+    #[test]
+    fn test_update_commands_use_zapet_packages() {
+        assert_eq!(
+            InstallMethod::Homebrew.update_command(),
+            Some("brew upgrade zapet")
+        );
+        assert_eq!(
+            InstallMethod::Cargo.update_command(),
+            Some("cargo install --locked zapet")
+        );
+        assert_eq!(
+            InstallMethod::Npm.update_command(),
+            Some("npm update -g zapet")
+        );
+    }
+
+    #[test]
+    fn test_should_run_update_check_debounces_by_interval() {
+        let time_source = super::super::time_source::TestTimeSource::new();
+        let temp_dir = tempfile::tempdir().unwrap();
+        let interval = Duration::from_secs(6 * 60 * 60);
+
+        assert!(should_run_update_check(
+            &time_source,
+            temp_dir.path(),
+            interval
+        ));
+        assert!(!should_run_update_check(
+            &time_source,
+            temp_dir.path(),
+            interval
+        ));
+
+        time_source.advance(interval - Duration::from_secs(1));
+        assert!(!should_run_update_check(
+            &time_source,
+            temp_dir.path(),
+            interval
+        ));
+
+        time_source.advance(Duration::from_secs(1));
+        assert!(should_run_update_check(
+            &time_source,
+            temp_dir.path(),
+            interval
+        ));
     }
 
     #[test]
