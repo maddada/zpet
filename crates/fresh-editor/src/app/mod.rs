@@ -194,9 +194,7 @@ use crate::view::file_tree::{FileTree, FileTreeView};
 use crate::view::prompt::{Prompt, PromptType};
 use crate::view::scroll_sync::ScrollSyncManager;
 use crate::view::split::{SplitManager, SplitViewState};
-use crate::view::ui::{
-    FileExplorerRenderer, SplitRenderer, StatusBarRenderer, SuggestionsRenderer,
-};
+use crate::view::ui::{SplitRenderer, StatusBarRenderer, SuggestionsRenderer};
 use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
@@ -2763,7 +2761,7 @@ mod tests {
         let action = resolver.resolve(&event, KeyContext::Normal);
         assert_eq!(action, Action::DedentSelection);
 
-        // Test Ctrl+G is GotoLine
+        // Test Ctrl+G saves the active file and exits in the single-file fork.
         let event = KeyEvent {
             code: KeyCode::Char('g'),
             modifiers: KeyModifiers::CONTROL,
@@ -2771,7 +2769,7 @@ mod tests {
             state: KeyEventState::NONE,
         };
         let action = resolver.resolve(&event, KeyContext::Normal);
-        assert_eq!(action, Action::GotoLine);
+        assert_eq!(action, Action::SaveAndQuit);
 
         // Test bookmark keybindings
         let event = KeyEvent {

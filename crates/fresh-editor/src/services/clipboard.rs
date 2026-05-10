@@ -75,6 +75,74 @@ fn set_system_clipboard_text(text: &str) {
     }
 }
 
+/// Read text from the arboard system clipboard.
+pub fn get_system_clipboard_text() -> Option<String> {
+    if let Ok(mut guard) = SYSTEM_CLIPBOARD.lock() {
+        if guard.is_none() {
+            if let Ok(cb) = arboard::Clipboard::new() {
+                *guard = Some(cb);
+            }
+        }
+
+        if let Some(clipboard) = guard.as_mut() {
+            if let Ok(text) = clipboard.get_text() {
+                if !text.is_empty() {
+                    return Some(text);
+                }
+            }
+        }
+    }
+
+    None
+}
+
+/// Encode RGBA bytes as PNG.
+pub fn encode_rgba_png(width: usize, height: usize, rgba: &[u8]) -> std::io::Result<Vec<u8>> {
+    let expected_len = width
+        .checked_mul(height)
+        .and_then(|pixels| pixels.checked_mul(4))
+        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidData, "image too large"))?;
+    if rgba.len() != expected_len {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "clipboard image has invalid RGBA length",
+        ));
+    }
+
+    let mut out = Vec::new();
+    {
+        let mut encoder = png::Encoder::new(&mut out, width as u32, height as u32);
+        encoder.set_color(png::ColorType::Rgba);
+        encoder.set_depth(png::BitDepth::Eight);
+        let mut writer = encoder.write_header()?;
+        writer.write_image_data(rgba)?;
+        writer.finish()?;
+    }
+    Ok(out)
+}
+
+/// Read an image from the arboard system clipboard and encode it as PNG.
+pub fn get_system_clipboard_image_png() -> Option<Vec<u8>> {
+    if let Ok(mut guard) = SYSTEM_CLIPBOARD.lock() {
+        if guard.is_none() {
+            if let Ok(cb) = arboard::Clipboard::new() {
+                *guard = Some(cb);
+            }
+        }
+
+        if let Some(clipboard) = guard.as_mut() {
+            if let Ok(image) = clipboard.get_image() {
+                match encode_rgba_png(image.width, image.height, image.bytes.as_ref()) {
+                    Ok(bytes) => return Some(bytes),
+                    Err(e) => tracing::debug!("clipboard image PNG encode failed: {}", e),
+                }
+            }
+        }
+    }
+
+    None
+}
+
 /// Pending clipboard data to deliver to clients in session mode
 #[derive(Debug, Clone)]
 pub struct PendingClipboard {
@@ -216,22 +284,9 @@ impl Clipboard {
 
         // Try arboard crate via the static clipboard (reads from system clipboard)
         if self.use_system_clipboard {
-            if let Ok(mut guard) = SYSTEM_CLIPBOARD.lock() {
-                // Create clipboard if it doesn't exist yet
-                if guard.is_none() {
-                    if let Ok(cb) = arboard::Clipboard::new() {
-                        *guard = Some(cb);
-                    }
-                }
-
-                if let Some(clipboard) = guard.as_mut() {
-                    if let Ok(text) = clipboard.get_text() {
-                        if !text.is_empty() {
-                            self.internal = text.clone();
-                            return Some(text);
-                        }
-                    }
-                }
+            if let Some(text) = get_system_clipboard_text() {
+                self.internal = text.clone();
+                return Some(text);
             }
         }
 
@@ -241,6 +296,15 @@ impl Clipboard {
         } else {
             Some(self.internal.clone())
         }
+    }
+
+    /// Get a PNG image from the system clipboard.
+    pub fn paste_image_png(&mut self) -> Option<Vec<u8>> {
+        if self.internal_only || !self.use_system_clipboard {
+            return None;
+        }
+
+        get_system_clipboard_image_png()
     }
 
     /// Get the internal clipboard content without checking system clipboard
@@ -271,18 +335,8 @@ impl Clipboard {
 
         // Check system clipboard via the static clipboard
         if self.use_system_clipboard {
-            if let Ok(mut guard) = SYSTEM_CLIPBOARD.lock() {
-                if guard.is_none() {
-                    if let Ok(cb) = arboard::Clipboard::new() {
-                        *guard = Some(cb);
-                    }
-                }
-
-                if let Some(clipboard) = guard.as_mut() {
-                    if let Ok(text) = clipboard.get_text() {
-                        return text.is_empty();
-                    }
-                }
+            if let Some(text) = get_system_clipboard_text() {
+                return text.is_empty();
             }
         }
 

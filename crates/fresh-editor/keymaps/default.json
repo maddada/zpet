@@ -47,14 +47,6 @@
       "when": "global"
     },
     {
-      "comment": "Ctrl+E -> Focus file explorer (switch focus between explorer and editor)",
-      "key": "e",
-      "modifiers": ["ctrl"],
-      "action": "focus_file_explorer",
-      "args": {},
-      "when": "normal"
-    },
-    {
       "key": "v",
       "modifiers": ["alt"],
       "action": "menu_open",
@@ -269,14 +261,6 @@
       "key": "Right",
       "modifiers": ["ctrl"],
       "action": "move_word_end",
-      "args": {},
-      "when": "normal"
-    },
-    {
-      "comment": "Normal context - Toggle sidebar/file explorer visibility",
-      "key": "b",
-      "modifiers": ["ctrl"],
-      "action": "toggle_file_explorer",
       "args": {},
       "when": "normal"
     },
@@ -672,9 +656,10 @@
       "when": "normal"
     },
     {
+      "comment": "Single-file terminal editor - save active file and exit",
       "key": "g",
       "modifiers": ["ctrl"],
-      "action": "goto_line",
+      "action": "save_and_quit",
       "args": {},
       "when": "normal"
     },

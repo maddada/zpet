@@ -750,6 +750,26 @@ impl Editor {
                 );
                 self.init_file_open_state();
             }
+            Action::SaveAndQuit => {
+                if self.active_state().buffer.file_path().is_none() {
+                    self.start_prompt_with_initial_text(
+                        t!("file.save_as_prompt").to_string(),
+                        PromptType::SaveFileAs,
+                        String::new(),
+                    );
+                    self.init_file_open_state();
+                } else if self.check_save_conflict().is_some() {
+                    self.start_prompt(
+                        t!("file.file_changed_prompt").to_string(),
+                        PromptType::ConfirmSaveConflict,
+                    );
+                } else if let Err(e) = self.save() {
+                    let msg = format!("{}", e);
+                    self.status_message = Some(t!("file.save_failed", error = &msg).to_string());
+                } else if self.prompt.is_none() {
+                    self.should_quit = true;
+                }
+            }
             Action::Open => {
                 self.start_prompt(t!("file.open_prompt").to_string(), PromptType::OpenFile);
                 self.prefill_open_file_prompt();

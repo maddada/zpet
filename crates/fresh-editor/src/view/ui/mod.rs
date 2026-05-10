@@ -26,8 +26,6 @@ pub mod expanded_menus_cache;
 #[cfg(feature = "runtime")]
 pub mod file_browser;
 #[cfg(feature = "runtime")]
-pub mod file_explorer;
-#[cfg(feature = "runtime")]
 pub mod menu;
 #[cfg(feature = "runtime")]
 pub mod menu_input;
@@ -45,8 +43,6 @@ pub mod tabs;
 pub use expanded_menus_cache::ExpandedMenusCache;
 #[cfg(feature = "runtime")]
 pub use file_browser::{FileBrowserLayout, FileBrowserRenderer};
-#[cfg(feature = "runtime")]
-pub use file_explorer::FileExplorerRenderer;
 pub use focus::FocusManager;
 pub use layout::point_in_rect;
 #[cfg(feature = "runtime")]

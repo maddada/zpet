@@ -138,10 +138,10 @@
       "when": "normal"
     },
     {
-      "comment": "Ctrl+A -> Line start (Mac terminals send this for Home)",
+      "comment": "Ctrl+A -> Select all",
       "key": "a",
       "modifiers": ["ctrl"],
-      "action": "move_line_start",
+      "action": "select_all",
       "args": {},
       "when": "normal"
     },
@@ -246,14 +246,6 @@
       "when": "normal"
     },
     {
-      "comment": "Ctrl+B -> Toggle sidebar/file explorer (Mac: Cmd+B)",
-      "key": "b",
-      "modifiers": ["ctrl"],
-      "action": "toggle_file_explorer",
-      "args": {},
-      "when": "normal"
-    },
-    {
       "key": "b",
       "modifiers": ["ctrl"],
       "action": "focus_editor",
@@ -301,10 +293,10 @@
       "when": "terminal"
     },
     {
-      "comment": "Ctrl+G -> Find next (F3 doesn't work; Ctrl+J is Line Feed in terminals)",
+      "comment": "Single-file terminal editor - save active file and exit",
       "key": "g",
       "modifiers": ["ctrl"],
-      "action": "find_next",
+      "action": "save_and_quit",
       "args": {},
       "when": "normal"
     },

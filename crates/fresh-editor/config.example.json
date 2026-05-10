@@ -1378,7 +1378,7 @@
         "label": "Help",
         "items": [
           {
-            "label": "Show Fresh Manual",
+            "label": "Show zapet manual",
             "action": "show_help",
             "args": {},
             "when": null,

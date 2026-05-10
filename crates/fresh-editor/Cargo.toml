@@ -1,10 +1,10 @@
 [package]
-name = "fresh-editor"
+name = "zapet"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
-default-run = "fresh"
-description = "A lightweight, fast terminal-based text editor with LSP support and TypeScript plugins"
+default-run = "zapet"
+description = "zmux agent prompt editor tui"
 license.workspace = true
 repository.workspace = true
 homepage.workspace = true
@@ -12,8 +12,13 @@ keywords = ["editor", "terminal", "tui", "text-editor", "lsp"]
 categories = ["command-line-utilities", "text-editors"]
 
 [[bin]]
-name = "fresh"
+name = "zapet"
 path = "src/main.rs"
+required-features = ["runtime"]
+
+[[bin]]
+name = "zapet-ssh-image"
+path = "src/bin/zapet_ssh_image.rs"
 required-features = ["runtime"]
 
 [[bin]]
@@ -64,6 +69,7 @@ runtime = [
     "dep:pulldown-cmark",
     "dep:sha2",
     "dep:arboard",
+    "dep:png",
     "dep:syntect",
     # Use onig regex engine for runtime (faster than fancy-regex)
     "syntect/regex-onig",
@@ -169,7 +175,8 @@ thiserror = { version = "2.0" }
 dirs = { version = "6.0" }
 pulldown-cmark = { version = "0.13", default-features = false, optional = true }
 sha2 = { version = "0.10", optional = true }
-arboard = { version = "3.6", default-features = false, features = ["wayland-data-control"], optional = true }
+arboard = { version = "3.6", default-features = false, features = ["image-data", "wayland-data-control"], optional = true }
+png = { version = "0.18", optional = true }
 # syntect with default-features=false so we can choose regex engine per build target
 # runtime uses onig (faster), wasm uses fancy-regex (pure Rust, WASM-compatible)
 syntect = { version = "5.3", default-features = false, optional = true }

@@ -171,14 +171,6 @@
       "when": "normal"
     },
     {
-      "comment": "Cmd+B -> Toggle sidebar/file explorer",
-      "key": "b",
-      "modifiers": ["super"],
-      "action": "toggle_file_explorer",
-      "args": {},
-      "when": "normal"
-    },
-    {
       "key": "b",
       "modifiers": ["super"],
       "action": "focus_editor",
@@ -310,14 +302,6 @@
       "key": "k",
       "modifiers": ["super", "shift"],
       "action": "delete_line",
-      "args": {},
-      "when": "normal"
-    },
-    {
-      "comment": "Cmd+E -> Focus file explorer",
-      "key": "e",
-      "modifiers": ["super"],
-      "action": "focus_file_explorer",
       "args": {},
       "when": "normal"
     },

@@ -1,8 +1,8 @@
 [Desktop Entry]
-Name=Fresh
-GenericName=Text Editor
-Comment=A lightweight, fast text editor with native window support
-Exec=fresh --gui %F
+Name=zapet
+GenericName=agent prompt editor tui
+Comment=zmux agent prompt editor tui
+Exec=zapet --gui %F
 Icon=fresh
 Terminal=false
 Type=Application

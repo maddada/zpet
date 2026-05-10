@@ -1,4 +1,8 @@
-# Fresh
+# zapet
+
+zapet is the zmux agent prompt editor tui. it is a focused fork of fresh for one-file terminal editing in agentic development workflows such as claude code, opencode, and codex cli.
+
+zapet can paste clipboard images as markdown links with `Ctrl+V`. Unsaved clipboard images are written to `~/.tmp/.zapet/images/` as `image-YYYY-MM-DD-HH-MM-SS.png`, and `zapet-ssh-image` provides the same local-clipboard-to-remote-path workflow for zapet sessions running inside SSH.
 
 A modern, full-featured terminal text editor, **with zero configuration**. Familiar keybindings, mouse support, and IDE-level features — no learning curve required.
 
@@ -203,13 +207,13 @@ mise use github:sinelaw/fresh
 ### npm
 
 ```bash
-npm install -g @fresh-editor/fresh-editor
+npm install -g zapet
 ```
 
 Or try it without installing:
 
 ```bash
-npx @fresh-editor/fresh-editor
+npx zapet
 ```
 
 ### Using cargo-binstall
@@ -243,7 +247,7 @@ nix profile add github:sinelaw/fresh
 ### From crates.io
 
 ```bash
-cargo install --locked fresh-editor
+cargo install --locked zapet
 ```
 
 ### From source
@@ -252,7 +256,7 @@ cargo install --locked fresh-editor
 git clone https://github.com/sinelaw/fresh.git
 cd fresh
 cargo build --release
-./target/release/fresh [file]
+./target/release/zapet [file]
 ```
 
 ## Documentation

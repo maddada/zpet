@@ -16,7 +16,15 @@ use std::sync::atomic::{AtomicBool, Ordering};
 ///   In both cases, lowercase the character and preserve the existing
 ///   modifiers. This ensures CapsLock+Ctrl+A matches the `Ctrl+A` binding,
 ///   while Shift+P still matches the `Shift+P` binding.
+/// - In this single-file fork, Command/Super is treated as Control so macOS
+///   `Cmd+A`, `Cmd+S`, etc. use the same bindings as `Ctrl+A`, `Ctrl+S`.
 fn normalize_key(code: KeyCode, modifiers: KeyModifiers) -> (KeyCode, KeyModifiers) {
+    let mut modifiers = modifiers;
+    if modifiers.contains(KeyModifiers::SUPER) {
+        modifiers.remove(KeyModifiers::SUPER);
+        modifiers.insert(KeyModifiers::CONTROL);
+    }
+
     if code == KeyCode::BackTab {
         return (code, modifiers.difference(KeyModifiers::SHIFT));
     }
@@ -402,6 +410,7 @@ pub enum Action {
     // File operations
     Save,
     SaveAs,
+    SaveAndQuit,
     Open,
     SwitchProject,
     New,
@@ -911,6 +920,7 @@ impl Action {
 
             "save" => Save,
             "save_as" => SaveAs,
+            "save_and_quit" => SaveAndQuit,
             "open" => Open,
             "switch_project" => SwitchProject,
             "new" => New,
@@ -1626,6 +1636,7 @@ impl KeybindingResolver {
                 | Action::ForceQuit
                 | Action::Save
                 | Action::SaveAs
+                | Action::SaveAndQuit
                 | Action::ShowHelp
                 | Action::ShowKeyboardShortcuts
                 | Action::PromptCancel  // Esc should always cancel
@@ -2224,6 +2235,7 @@ impl KeybindingResolver {
             Action::RemoveSecondaryCursors => t!("action.remove_secondary_cursors"),
             Action::Save => t!("action.save"),
             Action::SaveAs => t!("action.save_as"),
+            Action::SaveAndQuit => "Save and Quit".into(),
             Action::Open => t!("action.open"),
             Action::SwitchProject => t!("action.switch_project"),
             Action::New => t!("action.new"),
@@ -3134,20 +3146,35 @@ mod tests {
 
         let no_mod = KeyEvent::new(char_s, KeyModifiers::empty());
         let ctrl = KeyEvent::new(char_s, KeyModifiers::CONTROL);
+        let super_key = KeyEvent::new(char_s, KeyModifiers::SUPER);
         let shift = KeyEvent::new(char_s, KeyModifiers::SHIFT);
         let ctrl_shift = KeyEvent::new(char_s, KeyModifiers::CONTROL | KeyModifiers::SHIFT);
 
         let action_no_mod = resolver.resolve(&no_mod, KeyContext::Normal);
         let action_ctrl = resolver.resolve(&ctrl, KeyContext::Normal);
+        let action_super = resolver.resolve(&super_key, KeyContext::Normal);
         let action_shift = resolver.resolve(&shift, KeyContext::Normal);
         let action_ctrl_shift = resolver.resolve(&ctrl_shift, KeyContext::Normal);
 
         // These should all be different actions (or at least distinguishable)
         assert_eq!(action_no_mod, Action::InsertChar('s'));
         assert_eq!(action_ctrl, Action::Save);
+        assert_eq!(action_super, Action::Save);
         assert_eq!(action_shift, Action::InsertChar('s')); // Shift alone is still character input
                                                            // Ctrl+Shift+S is not bound by default, should return None
         assert_eq!(action_ctrl_shift, Action::None);
+    }
+
+    #[test]
+    fn test_super_resolves_as_control() {
+        let config = Config::default();
+        let resolver = KeybindingResolver::new(&config);
+
+        let super_a = KeyEvent::new(KeyCode::Char('a'), KeyModifiers::SUPER);
+        assert_eq!(
+            resolver.resolve(&super_a, KeyContext::Normal),
+            Action::SelectAll
+        );
     }
 
     #[test]

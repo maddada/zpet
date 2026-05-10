@@ -1,6 +1,5 @@
 use super::lsp_status::compose_lsp_status;
 use super::*;
-use crate::config::FileExplorerSide;
 
 impl Editor {
     /// Render the editor to the terminal
@@ -178,95 +177,8 @@ impl Editor {
         let search_options_idx = 3;
         let prompt_line_idx = 4;
 
-        // Split main content area based on file explorer visibility
-        // Also keep the layout split if a sync is in progress (to avoid flicker)
-        let editor_content_area;
-        let file_explorer_should_show = self.file_explorer_visible
-            && (self.file_explorer.is_some() || self.file_explorer_sync_in_progress);
-
-        if file_explorer_should_show {
-            // Split horizontally based on side placement
-            tracing::trace!(
-                "render: file explorer layout active (present={}, sync_in_progress={}, side={:?})",
-                self.file_explorer.is_some(),
-                self.file_explorer_sync_in_progress,
-                self.file_explorer_side
-            );
-            let explorer_cols = self.file_explorer_width.to_cols(main_content_area.width);
-
-            let (explorer_area, editor_area) = match self.file_explorer_side {
-                FileExplorerSide::Left => {
-                    let chunks = Layout::default()
-                        .direction(Direction::Horizontal)
-                        .constraints([Constraint::Length(explorer_cols), Constraint::Min(0)])
-                        .split(main_content_area);
-                    (chunks[0], chunks[1])
-                }
-                FileExplorerSide::Right => {
-                    let chunks = Layout::default()
-                        .direction(Direction::Horizontal)
-                        .constraints([Constraint::Min(0), Constraint::Length(explorer_cols)])
-                        .split(main_content_area);
-                    (chunks[1], chunks[0])
-                }
-            };
-
-            self.cached_layout.file_explorer_area = Some(explorer_area);
-            editor_content_area = editor_area;
-
-            // Get connection string before mutable borrow of file_explorer.
-            let remote_connection = self.connection_display_string();
-
-            // Render file explorer (only if we have it - during sync we just keep the area reserved)
-            if let Some(ref mut explorer) = self.file_explorer {
-                let is_focused = self.key_context == KeyContext::FileExplorer;
-
-                // Build set of files with unsaved changes
-                let mut files_with_unsaved_changes = std::collections::HashSet::new();
-                for (buffer_id, state) in &self.buffers {
-                    if state.buffer.is_modified() {
-                        if let Some(metadata) = self.buffer_metadata.get(buffer_id) {
-                            if let Some(file_path) = metadata.file_path() {
-                                files_with_unsaved_changes.insert(file_path.clone());
-                            }
-                        }
-                    }
-                }
-
-                let close_button_hovered = matches!(
-                    &self.mouse_state.hover_target,
-                    Some(HoverTarget::FileExplorerCloseButton)
-                );
-                let keybindings = self.keybindings.read().unwrap();
-                let empty: Vec<std::path::PathBuf> = Vec::new();
-                let cut_paths = self
-                    .file_explorer_clipboard
-                    .as_ref()
-                    .filter(|cb| cb.is_cut)
-                    .map(|cb| cb.paths.as_slice())
-                    .unwrap_or(empty.as_slice());
-                FileExplorerRenderer::render(
-                    explorer,
-                    frame,
-                    explorer_area,
-                    is_focused,
-                    &files_with_unsaved_changes,
-                    &self.file_explorer_decoration_cache,
-                    &keybindings,
-                    self.key_context.clone(),
-                    &self.theme,
-                    close_button_hovered,
-                    remote_connection.as_deref(),
-                    cut_paths,
-                );
-            }
-            // Note: if file_explorer is None but sync_in_progress is true,
-            // we just leave the area blank (or could render a placeholder)
-        } else {
-            // No file explorer: use entire main content area for editor
-            self.cached_layout.file_explorer_area = None;
-            editor_content_area = main_content_area;
-        }
+        let editor_content_area = main_content_area;
+        self.cached_layout.file_explorer_area = None;
 
         // Note: Tabs are now rendered within each split by SplitRenderer
 
@@ -2881,19 +2793,7 @@ impl Editor {
             .split(size);
         let main_content_area = main_chunks[1];
 
-        // Compute editor_content_area (with file explorer split if visible)
-        let file_explorer_should_show = self.file_explorer_visible
-            && (self.file_explorer.is_some() || self.file_explorer_sync_in_progress);
-        let editor_content_area = if file_explorer_should_show {
-            let explorer_cols = self.file_explorer_width.to_cols(main_content_area.width);
-            let horizontal_chunks = Layout::default()
-                .direction(Direction::Horizontal)
-                .constraints([Constraint::Length(explorer_cols), Constraint::Min(0)])
-                .split(main_content_area);
-            horizontal_chunks[1]
-        } else {
-            main_content_area
-        };
+        let editor_content_area = main_content_area;
 
         // Compute layout for all visible splits and update cached view_line_mappings
         let view_line_mappings = SplitRenderer::compute_content_layout(

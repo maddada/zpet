@@ -1,14 +1,14 @@
 {
-  "name": "@fresh-editor/fresh-editor",
+  "name": "zapet",
   "version": "VERSION_PLACEHOLDER",
-  "description": "A modern terminal-based text editor with plugin support",
+  "description": "zmux agent prompt editor tui",
   "repository": {
     "type": "git",
     "url": "https://github.com/sinelaw/fresh.git"
   },
   "license": "Apache-2.0",
   "bin": {
-    "fresh": "run-fresh.js"
+    "zapet": "run-fresh.js"
   },
   "scripts": {
     "postinstall": "node install.js"
@@ -26,7 +26,7 @@
   ],
   "os": ["darwin", "linux", "win32"],
   "cpu": ["x64", "arm64"],
-  "keywords": ["editor", "terminal", "cli", "text-editor", "vim"],
+  "keywords": ["editor", "terminal", "cli", "text-editor", "agent", "prompt"],
   "engines": {
     "node": ">=18"
   }

@@ -76,19 +76,9 @@ impl Editor {
     }
 
     pub fn toggle_file_explorer(&mut self) {
-        self.file_explorer_visible = !self.file_explorer_visible;
-
-        if self.file_explorer_visible {
-            if self.file_explorer.is_none() {
-                self.init_file_explorer();
-            }
-            self.key_context = KeyContext::FileExplorer;
-            self.set_status_message(t!("explorer.opened").to_string());
-            self.sync_file_explorer_to_active_file();
-        } else {
-            self.key_context = KeyContext::Normal;
-            self.set_status_message(t!("explorer.closed").to_string());
-        }
+        self.file_explorer_visible = false;
+        self.key_context = KeyContext::Normal;
+        self.set_status_message(t!("explorer.closed").to_string());
 
         // Notify plugins that the viewport dimensions changed (sidebar affects available width)
         self.plugin_manager.run_hook(
@@ -101,9 +91,7 @@ impl Editor {
     }
 
     pub fn show_file_explorer(&mut self) {
-        if !self.file_explorer_visible {
-            self.toggle_file_explorer();
-        }
+        self.toggle_file_explorer();
     }
 
     pub fn sync_file_explorer_to_active_file(&mut self) {
@@ -150,19 +138,7 @@ impl Editor {
     }
 
     pub fn focus_file_explorer(&mut self) {
-        if self.file_explorer_visible {
-            // Dismiss transient popups and clear hover state when focusing file explorer
-            self.on_editor_focus_lost();
-
-            // Cancel search/replace prompts when switching focus away from editor
-            self.cancel_search_prompt_if_active();
-
-            self.key_context = KeyContext::FileExplorer;
-            self.set_status_message(t!("explorer.focused").to_string());
-            self.sync_file_explorer_to_active_file();
-        } else {
-            self.toggle_file_explorer();
-        }
+        self.toggle_file_explorer();
     }
 
     pub fn focus_editor(&mut self) {

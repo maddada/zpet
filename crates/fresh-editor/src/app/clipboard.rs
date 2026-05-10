@@ -6,6 +6,7 @@
 //! - Multi-cursor add above/below/at next match
 
 use rust_i18n::t;
+use std::path::{Path, PathBuf};
 
 use crate::input::multi_cursor::{
     add_cursor_above, add_cursor_at_next_match, add_cursor_below, AddCursorResult,
@@ -17,6 +18,148 @@ use crate::primitives::word_navigation::{
 };
 
 use super::Editor;
+
+const IMAGE_MARKDOWN_PREFIX: &str = "[Image #";
+
+fn supported_image_extension(path: &Path) -> Option<&'static str> {
+    let ext = path.extension()?.to_str()?.to_ascii_lowercase();
+    match ext.as_str() {
+        "png" => Some("png"),
+        "jpg" | "jpeg" => Some("jpg"),
+        "gif" => Some("gif"),
+        "webp" => Some("webp"),
+        "bmp" => Some("bmp"),
+        "tif" | "tiff" => Some("tiff"),
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn image_markdown_uses_image_label_and_angle_targets_for_spaces() {
+        let path = Path::new("/Users/madda/My Images/image one.png");
+        assert_eq!(
+            markdown_image_link(3, path),
+            "[Image #3](</Users/madda/My Images/image one.png>)"
+        );
+    }
+
+    #[test]
+    fn image_markdown_keeps_simple_absolute_paths_plain() {
+        let path = Path::new("/Users/madda/.tmp/.zapet/images/image-2026-05-10-12-30-00.png");
+        assert_eq!(
+            markdown_image_link(1, path),
+            "[Image #1](/Users/madda/.tmp/.zapet/images/image-2026-05-10-12-30-00.png)"
+        );
+    }
+
+    #[test]
+    fn clipboard_text_image_path_accepts_file_urls_with_spaces() {
+        let path = clipboard_text_image_path("file:///Users/madda/My%20Images/example.png")
+            .expect("image file URL should parse");
+        assert_eq!(path, PathBuf::from("/Users/madda/My Images/example.png"));
+    }
+
+    #[test]
+    fn next_image_number_scans_existing_image_links() {
+        assert_eq!(
+            max_image_number_in_text("first [Image #1](/a.png)\nnext [Image #12](/b.png)"),
+            12
+        );
+    }
+}
+
+fn percent_decode(input: &str) -> Option<String> {
+    let bytes = input.as_bytes();
+    let mut decoded = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%' {
+            if i + 2 >= bytes.len() {
+                return None;
+            }
+            let hex = std::str::from_utf8(&bytes[i + 1..i + 3]).ok()?;
+            let value = u8::from_str_radix(hex, 16).ok()?;
+            decoded.push(value);
+            i += 3;
+        } else {
+            decoded.push(bytes[i]);
+            i += 1;
+        }
+    }
+    String::from_utf8(decoded).ok()
+}
+
+fn clipboard_text_image_path(text: &str) -> Option<PathBuf> {
+    let trimmed = text.trim();
+    if trimmed.is_empty() || trimmed.lines().count() > 1 {
+        return None;
+    }
+
+    let trimmed = trimmed
+        .strip_prefix('"')
+        .and_then(|s| s.strip_suffix('"'))
+        .or_else(|| {
+            trimmed
+                .strip_prefix('\'')
+                .and_then(|s| s.strip_suffix('\''))
+        })
+        .unwrap_or(trimmed);
+
+    let path_text = if let Some(rest) = trimmed.strip_prefix("file://localhost") {
+        percent_decode(rest)?
+    } else if let Some(rest) = trimmed.strip_prefix("file://") {
+        percent_decode(rest)?
+    } else {
+        trimmed.to_string()
+    };
+
+    let path = if let Some(rest) = path_text.strip_prefix("~/") {
+        dirs::home_dir()?.join(rest)
+    } else {
+        PathBuf::from(path_text)
+    };
+
+    if !path.is_absolute() || supported_image_extension(&path).is_none() {
+        return None;
+    }
+
+    Some(path)
+}
+
+fn markdown_path_target(path: &Path) -> String {
+    let text = path.to_string_lossy();
+    if text
+        .chars()
+        .any(|c| c.is_whitespace() || matches!(c, '(' | ')' | '<' | '>'))
+    {
+        format!("<{}>", text)
+    } else {
+        text.into_owned()
+    }
+}
+
+fn markdown_image_link(number: usize, path: &Path) -> String {
+    format!("[Image #{}]({})", number, markdown_path_target(path))
+}
+
+fn max_image_number_in_text(text: &str) -> usize {
+    let mut max_number = 0;
+    for (offset, _) in text.match_indices(IMAGE_MARKDOWN_PREFIX) {
+        let number_start = offset + IMAGE_MARKDOWN_PREFIX.len();
+        let digits: String = text[number_start..]
+            .chars()
+            .take_while(|c| c.is_ascii_digit())
+            .collect();
+        if let Ok(number) = digits.parse::<usize>() {
+            max_number = max_number.max(number);
+        }
+    }
+    max_number
+}
 
 // These are the clipboard and multi-cursor operations on Editor.
 //
@@ -504,6 +647,10 @@ impl Editor {
     /// - Selection replacement (deletes selection before inserting)
     /// - Atomic undo (single undo step for entire operation)
     pub fn paste(&mut self) {
+        if self.paste_clipboard_image() {
+            return;
+        }
+
         // Get content from clipboard (tries system first, falls back to internal)
         let text = match self.clipboard.paste() {
             Some(text) => text,
@@ -512,6 +659,90 @@ impl Editor {
 
         // Use paste_text which handles line ending normalization
         self.paste_text(text);
+    }
+
+    fn paste_clipboard_image(&mut self) -> bool {
+        if let Some(text) = self.clipboard.paste() {
+            if let Some(path) = clipboard_text_image_path(&text) {
+                if path.is_file() {
+                    match self.markdown_for_clipboard_image_file(&path) {
+                        Ok(markdown) => {
+                            self.paste_text(markdown);
+                            return true;
+                        }
+                        Err(e) => {
+                            self.status_message = Some(format!("Failed to paste image: {}", e));
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        let Some(png_bytes) = self.clipboard.paste_image_png() else {
+            return false;
+        };
+
+        match self.write_zapet_image(&png_bytes, "png") {
+            Ok(path) => {
+                let number = self.next_image_number();
+                self.paste_text(markdown_image_link(number, &path));
+                true
+            }
+            Err(e) => {
+                self.status_message = Some(format!("Failed to paste image: {}", e));
+                true
+            }
+        }
+    }
+
+    fn markdown_for_clipboard_image_file(&mut self, path: &Path) -> std::io::Result<String> {
+        let number = self.next_image_number();
+        let path = if self.authority.filesystem.remote_connection_info().is_some() {
+            let bytes = std::fs::read(path)?;
+            let ext = supported_image_extension(path).unwrap_or("png");
+            self.write_zapet_image(&bytes, ext)?
+        } else {
+            path.to_path_buf()
+        };
+        Ok(markdown_image_link(number, &path))
+    }
+
+    fn write_zapet_image(&self, bytes: &[u8], extension: &str) -> std::io::Result<PathBuf> {
+        let home = self.authority.filesystem.home_dir()?;
+        let dir = home.join(".tmp").join(".zapet").join("images");
+        self.authority.filesystem.create_dir_all(&dir)?;
+
+        let timestamp = chrono::Local::now().format("image-%Y-%m-%d-%H-%M-%S");
+        for suffix in 0..1000 {
+            let filename = if suffix == 0 {
+                format!("{}.{}", timestamp, extension)
+            } else {
+                format!("{}-{}.{}", timestamp, suffix + 1, extension)
+            };
+            let path = dir.join(filename);
+            if self.authority.filesystem.exists(&path) {
+                continue;
+            }
+            self.authority.filesystem.write_file(&path, bytes)?;
+            return Ok(path);
+        }
+
+        Err(std::io::Error::new(
+            std::io::ErrorKind::AlreadyExists,
+            "could not allocate image filename",
+        ))
+    }
+
+    fn next_image_number(&self) -> usize {
+        let mut max_number = 0;
+        if let Some(prompt) = &self.prompt {
+            max_number = max_number.max(max_image_number_in_text(&prompt.input));
+        }
+        if let Some(text) = self.active_state().buffer.to_string() {
+            max_number = max_number.max(max_image_number_in_text(&text));
+        }
+        max_number + 1
     }
 
     /// Paste text directly into the editor

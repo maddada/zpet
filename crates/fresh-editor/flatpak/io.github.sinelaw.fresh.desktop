@@ -1,8 +1,8 @@
 [Desktop Entry]
-Name=Fresh
-GenericName=Text Editor
-Comment=A lightweight, fast terminal-based text editor with LSP support
-Exec=fresh %F
+Name=zapet
+GenericName=agent prompt editor tui
+Comment=zmux agent prompt editor tui
+Exec=zapet %F
 Icon=io.github.sinelaw.fresh
 Terminal=true
 Type=Application
