@@ -3195,7 +3195,10 @@ mod tests {
         let super_shift_left =
             KeyEvent::new(KeyCode::Left, KeyModifiers::SUPER | KeyModifiers::SHIFT);
         let super_s = KeyEvent::new(KeyCode::Char('s'), KeyModifiers::SUPER);
+        let super_y = KeyEvent::new(KeyCode::Char('y'), KeyModifiers::SUPER);
         let super_v = KeyEvent::new(KeyCode::Char('v'), KeyModifiers::SUPER);
+        let ctrl_s = KeyEvent::new(KeyCode::Char('s'), KeyModifiers::CONTROL);
+        let alt_left = KeyEvent::new(KeyCode::Left, KeyModifiers::ALT);
 
         assert_eq!(
             resolver.resolve(&ctrl_a, KeyContext::Normal),
@@ -3221,9 +3224,18 @@ mod tests {
             resolver.resolve(&super_s, KeyContext::Normal),
             Action::SaveAndQuit
         );
+        assert_eq!(resolver.resolve(&super_y, KeyContext::Normal), Action::Redo);
         assert_eq!(
             resolver.resolve(&super_v, KeyContext::Normal),
             Action::Paste
+        );
+        assert_eq!(
+            resolver.resolve(&ctrl_s, KeyContext::Normal),
+            Action::SaveAndQuit
+        );
+        assert_eq!(
+            resolver.resolve(&alt_left, KeyContext::Normal),
+            Action::MoveWordLeft
         );
     }
 

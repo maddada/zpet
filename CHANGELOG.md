@@ -1,5 +1,17 @@
 # Release Notes
 
+## 0.3.9
+
+### Improvements
+
+* **Built-in gte defaults match Ghostex prompt editing**: New configs default to the calmer dark theme, no current-line highlight, no chrome bars, trimmed trailing whitespace on save, a blinking bar cursor, and no terminal title override.
+
+* **Inline hotkey footer**: gte now shows a compact, minimizable bottom grid for the main Mac prompt-editing shortcuts.
+
+* **Mac shortcut forwarding from Ghostex**: Cmd+C, Cmd+Z, Cmd+Y, Cmd+S, and Cmd+Shift+Z can reach the terminal editor when Ghostex owns the terminal pane, while native terminal selection copy remains intact.
+
+* **Save-and-return parity**: Ctrl+S now saves and quits like Ctrl+G in gte.
+
 ## 0.3.8
 
 ### Improvements

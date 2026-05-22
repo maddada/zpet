@@ -139,8 +139,10 @@ impl Editor {
                 PromptType::OpenFile | PromptType::SwitchProject | PromptType::SaveFileAs
             )
         }) && self.file_open_state.is_some();
+        let mut show_gte_hotkey_hints =
+            self.should_show_gte_hotkey_hints(has_suggestions, has_file_browser);
 
-        // Build main vertical layout: [menu_bar, main_content, status_bar, search_options, prompt_line]
+        // Build main vertical layout: [menu_bar, main_content, hotkey_hints, status_bar, search_options, prompt_line]
         // Status bar is hidden when suggestions popup is shown
         // Search options bar is shown when in search prompt
         let mut main_chunks = Layout::default()
@@ -148,6 +150,7 @@ impl Editor {
             .constraints(vec![
                 Constraint::Length(if self.menu_bar_visible { 1 } else { 0 }), // Menu bar
                 Constraint::Min(0),                                            // Main content area
+                Constraint::Length(self.gte_hotkey_hints_height(show_gte_hotkey_hints)),
                 Constraint::Length(
                     if !self.status_bar_visible || has_suggestions || has_file_browser {
                         0
@@ -155,7 +158,7 @@ impl Editor {
                         1
                     },
                 ), // Status bar (hidden when toggled off or with popups)
-                Constraint::Length(if show_search_options { 1 } else { 0 }),   // Search options bar
+                Constraint::Length(if show_search_options { 1 } else { 0 }), // Search options bar
                 Constraint::Length(
                     // Prompt line is auto-hidden when no prompt active.
                     // Overlay prompts (Live Grep, issue #1796) host the
@@ -173,9 +176,10 @@ impl Editor {
 
         let menu_bar_area = main_chunks[0];
         let main_content_area = main_chunks[1];
-        let status_bar_idx = 2;
-        let search_options_idx = 3;
-        let prompt_line_idx = 4;
+        let hotkey_hints_idx = 2;
+        let status_bar_idx = 3;
+        let search_options_idx = 4;
+        let prompt_line_idx = 5;
 
         let editor_content_area = main_content_area;
         self.cached_layout.file_explorer_area = None;
@@ -383,11 +387,14 @@ impl Editor {
                         PromptType::OpenFile | PromptType::SwitchProject | PromptType::SaveFileAs
                     )
                 }) && self.file_open_state.is_some();
+                show_gte_hotkey_hints =
+                    self.should_show_gte_hotkey_hints(has_suggestions, has_file_browser);
                 main_chunks = Layout::default()
                     .direction(Direction::Vertical)
                     .constraints(vec![
                         Constraint::Length(if self.menu_bar_visible { 1 } else { 0 }),
                         Constraint::Min(0),
+                        Constraint::Length(self.gte_hotkey_hints_height(show_gte_hotkey_hints)),
                         Constraint::Length(
                             if !self.status_bar_visible || has_suggestions || has_file_browser {
                                 0
@@ -694,6 +701,21 @@ impl Editor {
                     .unwrap_or(crate::services::release_checker::HOMEBREW_UPDATE_COMMAND);
                 format!("{label} | {command}")
             });
+
+        /*
+        CDXC:GteHotkeys 2026-05-23-02:10:
+        gte should expose the Mac-first terminal-editor shortcuts inline at
+        the bottom of the TUI, not in a separate popup. Keep the footer as a
+        compact grid and make the whole area clickable so it can be minimized
+        without adding another visible shortcut.
+        */
+        if show_gte_hotkey_hints {
+            let area = main_chunks[hotkey_hints_idx];
+            self.render_gte_hotkey_hints(frame, area);
+            self.cached_layout.gte_hotkey_hints_area = Some(area);
+        } else {
+            self.cached_layout.gte_hotkey_hints_area = None;
+        }
 
         // Render status bar (hidden when toggled off, or when suggestions/file browser popup is shown)
         if self.status_bar_visible && !has_suggestions && !has_file_browser {
@@ -2781,6 +2803,109 @@ impl Editor {
         }
     }
 
+    fn should_show_gte_hotkey_hints(&self, has_suggestions: bool, has_file_browser: bool) -> bool {
+        self.prompt.is_none() && !has_suggestions && !has_file_browser
+    }
+
+    fn gte_hotkey_hints_height(&self, show_hints: bool) -> u16 {
+        if !show_hints {
+            0
+        } else if self.gte_hotkey_hints_collapsed {
+            1
+        } else {
+            2
+        }
+    }
+
+    fn render_gte_hotkey_hints(&self, frame: &mut Frame, area: ratatui::layout::Rect) {
+        use ratatui::style::{Modifier, Style};
+        use ratatui::text::{Line, Span};
+        use ratatui::widgets::Paragraph;
+
+        if area.height == 0 {
+            return;
+        }
+
+        let is_hovered = matches!(
+            self.mouse_state.hover_target,
+            Some(HoverTarget::GteHotkeyHints)
+        );
+        let background = if is_hovered {
+            self.theme.menu_hover_bg
+        } else {
+            self.theme.status_bar_bg
+        };
+        let base_style = Style::default().fg(self.theme.status_bar_fg).bg(background);
+        let key_style = Style::default()
+            .fg(self.theme.help_key_fg)
+            .bg(background)
+            .add_modifier(Modifier::BOLD);
+        let label_style = Style::default().fg(self.theme.status_bar_fg).bg(background);
+
+        frame.render_widget(Paragraph::new("").style(base_style), area);
+
+        if self.gte_hotkey_hints_collapsed {
+            let line = Line::from(vec![
+                Span::styled("  ▸ ", key_style),
+                Span::styled("gte hotkeys", label_style),
+                Span::styled(
+                    "  click to show",
+                    Style::default().fg(self.theme.help_fg).bg(background),
+                ),
+            ]);
+            frame.render_widget(Paragraph::new(line).style(base_style), area);
+            return;
+        }
+
+        let rows = [
+            [
+                ("▾ ⌘a", "Select All"),
+                ("⌘c", "Copy"),
+                ("⌘v", "Paste"),
+                ("⌘z", "Undo"),
+            ],
+            [
+                ("⌘y", "Redo"),
+                ("⌥← / ⌥→", "Jump 1 Word"),
+                ("⌘← / ⌘→", "Jump to Start/End"),
+                ("⌘g / ⌘s", "Save & Return"),
+            ],
+        ];
+
+        let row_areas = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![Constraint::Length(1), Constraint::Length(1)])
+            .split(area);
+
+        for (row_idx, row_items) in rows.iter().enumerate() {
+            if row_idx >= row_areas.len() {
+                break;
+            }
+            let col_areas = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints(vec![
+                    Constraint::Ratio(1, 4),
+                    Constraint::Ratio(1, 4),
+                    Constraint::Ratio(1, 4),
+                    Constraint::Ratio(1, 4),
+                ])
+                .split(row_areas[row_idx]);
+
+            for (col_idx, (key, label)) in row_items.iter().enumerate() {
+                if col_idx >= col_areas.len() {
+                    break;
+                }
+                let line = Line::from(vec![
+                    Span::styled("  ", base_style),
+                    Span::styled(*key, key_style),
+                    Span::styled(" - ", label_style),
+                    Span::styled(*label, label_style),
+                ]);
+                frame.render_widget(Paragraph::new(line).style(base_style), col_areas[col_idx]);
+            }
+        }
+    }
+
     /// Recompute the view_line_mappings layout without drawing.
     /// Used during macro replay so that visual-line movements (MoveLineEnd,
     /// MoveUp, MoveDown on wrapped lines) see correct, up-to-date layout
@@ -2794,10 +2919,12 @@ impl Editor {
         self.sync_scroll_groups();
 
         // Replicate the layout computation that produces editor_content_area.
-        // Same constraints as render(): [menu_bar, main_content, status_bar, search_options, prompt_line]
+        // Same constraints as render(): [menu_bar, main_content, hotkey_hints, status_bar, search_options, prompt_line]
+        let show_gte_hotkey_hints = self.should_show_gte_hotkey_hints(false, false);
         let constraints = vec![
             Constraint::Length(if self.menu_bar_visible { 1 } else { 0 }),
             Constraint::Min(0),
+            Constraint::Length(self.gte_hotkey_hints_height(show_gte_hotkey_hints)),
             Constraint::Length(if self.status_bar_visible { 1 } else { 0 }), // status bar
             Constraint::Length(0), // search options (doesn't matter for layout)
             Constraint::Length(if self.prompt_line_visible { 1 } else { 0 }), // prompt line

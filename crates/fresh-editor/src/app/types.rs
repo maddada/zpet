@@ -629,6 +629,8 @@ pub enum HoverTarget {
     StatusBarEncodingIndicator,
     /// Hovering over the status bar language indicator
     StatusBarLanguageIndicator,
+    /// Hovering over the built-in gte hotkey footer
+    GteHotkeyHints,
     /// Hovering over the search options "Case Sensitive" checkbox
     SearchOptionCaseSensitive,
     /// Hovering over the search options "Whole Word" checkbox
@@ -1202,6 +1204,8 @@ pub(crate) struct CachedLayout {
     /// Status bar remote-authority indicator area (row, start_col, end_col)
     /// — clickable to open the remote-authority context menu.
     pub status_bar_remote_area: Option<(u16, u16, u16)>,
+    /// Built-in gte hotkey footer area; clicking it collapses/expands the grid.
+    pub gte_hotkey_hints_area: Option<Rect>,
     /// Search options layout for checkbox hit testing
     pub search_options_layout: Option<crate::view::ui::status_bar::SearchOptionsLayout>,
     /// Menu bar layout for hit testing

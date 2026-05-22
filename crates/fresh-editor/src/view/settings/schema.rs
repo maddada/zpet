@@ -716,7 +716,7 @@ mod tests {
     "theme": {
       "description": "Color theme name",
       "type": "string",
-      "default": "high-contrast"
+      "default": "dark"
     },
     "check_for_updates": {
       "description": "Check for new versions on quit",

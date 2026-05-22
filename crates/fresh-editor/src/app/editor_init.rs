@@ -834,6 +834,7 @@ impl Editor {
             menu_bar_auto_shown: false,
             tab_bar_visible: show_tab_bar,
             status_bar_visible: show_status_bar,
+            gte_hotkey_hints_collapsed: false,
             prompt_line_visible: show_prompt_line,
             mouse_enabled: true,
             same_buffer_scroll_sync: false,

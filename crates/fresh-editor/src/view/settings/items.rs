@@ -1641,7 +1641,7 @@ mod tests {
             name: "Theme".to_string(),
             description: None,
             setting_type: SettingType::String,
-            default: Some(serde_json::Value::String("high-contrast".to_string())),
+            default: Some(serde_json::Value::String("dark".to_string())),
             read_only: false,
             section: None,
             order: None,

@@ -993,6 +993,12 @@ impl Editor {
             }
         }
 
+        if let Some(area) = self.cached_layout.gte_hotkey_hints_area {
+            if in_rect(col, row, area) {
+                return Some(HoverTarget::GteHotkeyHints);
+            }
+        }
+
         // Check search options bar checkboxes
         if let Some(ref layout) = self.cached_layout.search_options_layout {
             use crate::view::ui::status_bar::SearchOptionsHover;
@@ -1353,6 +1359,9 @@ impl Editor {
             return r;
         }
         if let Some(r) = self.handle_click_status_bar(col, row) {
+            return r;
+        }
+        if let Some(r) = self.handle_click_gte_hotkey_hints(col, row) {
             return r;
         }
         if let Some(r) = self.handle_click_search_options(col, row) {
@@ -1892,6 +1901,16 @@ impl Editor {
             }
         }
         None
+    }
+
+    fn handle_click_gte_hotkey_hints(&mut self, col: u16, row: u16) -> Option<AnyhowResult<()>> {
+        let area = self.cached_layout.gte_hotkey_hints_area?;
+        if !in_rect(col, row, area) {
+            return None;
+        }
+
+        self.gte_hotkey_hints_collapsed = !self.gte_hotkey_hints_collapsed;
+        Some(Ok(()))
     }
 
     fn handle_click_search_options(&mut self, col: u16, row: u16) -> Option<AnyhowResult<()>> {

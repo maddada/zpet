@@ -2261,9 +2261,9 @@ mod tests {
             "Theme should be 'dracula' from file"
         );
 
-        // Step 3: User changes theme to the DEFAULT value ("high-contrast")
+        // Step 3: User changes theme to the DEFAULT value ("dark")
         let mut config = baseline.clone();
-        config.theme = crate::config::ThemeName::from("high-contrast");
+        config.theme = crate::config::ThemeName::from("dark");
 
         // Step 4: Save the change using baseline tracking
         resolver
@@ -2280,10 +2280,10 @@ mod tests {
         // Step 6: Reload config
         let reloaded = resolver.resolve().unwrap();
 
-        // The theme should be "high-contrast" (either explicitly in file, or absent so default applies)
+        // The theme should be "dark" (either explicitly in file, or absent so default applies)
         assert_eq!(
-            reloaded.theme.0, "high-contrast",
-            "Theme should be 'high-contrast' after changing to default and saving. \
+            reloaded.theme.0, "dark",
+            "Theme should be 'dark' after changing to default and saving. \
              With save_to_layer_with_baseline, the theme field should be removed from file \
              so the default applies. File content: {}",
             saved_content

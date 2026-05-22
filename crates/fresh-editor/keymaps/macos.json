@@ -171,6 +171,14 @@
       "when": "normal"
     },
     {
+      "comment": "CDXC:GteHotkeys 2026-05-23-02:10: Cmd+Y should redo in gte because the terminal editor footer presents command-key Mac shortcuts, and Ghostex forwards Cmd+Y as Super+Y when gte owns focus.",
+      "key": "y",
+      "modifiers": ["super"],
+      "action": "redo",
+      "args": {},
+      "when": "normal"
+    },
+    {
       "comment": "Cmd+A -> Select all",
       "key": "a",
       "modifiers": ["super"],
@@ -378,10 +386,10 @@
       "when": "normal"
     },
     {
-      "comment": "Option+Left -> Line start; keep Alt+B as the readline word-left escape form",
+      "comment": "CDXC:GteHotkeys 2026-05-23-02:10: The built-in gte footer documents Option+Left/Right as one-word navigation, while Cmd+Left/Right owns line start/end.",
       "key": "Left",
       "modifiers": ["alt"],
-      "action": "move_line_start",
+      "action": "move_word_left",
       "args": {},
       "when": "normal"
     },
@@ -487,6 +495,14 @@
     {
       "comment": "Single-file terminal editor - save active file and exit",
       "key": "g",
+      "modifiers": ["ctrl"],
+      "action": "save_and_quit",
+      "args": {},
+      "when": "normal"
+    },
+    {
+      "comment": "CDXC:GteHotkeys 2026-05-23-02:10: Ctrl+S must match Ctrl+G in the terminal editor so save-and-return works even when the host forwards save as a control shortcut.",
+      "key": "s",
       "modifiers": ["ctrl"],
       "action": "save_and_quit",
       "args": {},

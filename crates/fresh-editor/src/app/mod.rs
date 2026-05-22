@@ -605,6 +605,9 @@ pub struct Editor {
     /// Whether status bar is visible
     status_bar_visible: bool,
 
+    /// Whether the built-in gte hotkey footer is collapsed to one row.
+    gte_hotkey_hints_collapsed: bool,
+
     /// Whether prompt line is visible (when no prompt is active)
     prompt_line_visible: bool,
 

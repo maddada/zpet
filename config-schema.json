@@ -14,7 +14,7 @@
     "theme": {
       "description": "Color theme name",
       "$ref": "#/$defs/ThemeOptions",
-      "default": "high-contrast"
+      "default": "dark"
     },
     "locale": {
       "description": "UI locale (language) for translations\nIf not set, auto-detected from environment (LC_ALL, LC_MESSAGES, LANG)",
@@ -32,24 +32,24 @@
       "default": {
         "line_numbers": true,
         "relative_line_numbers": false,
-        "highlight_current_line": true,
+        "highlight_current_line": false,
         "line_wrap": true,
         "wrap_indent": true,
         "wrap_column": null,
         "page_width": 80,
         "syntax_highlighting": true,
-        "show_menu_bar": true,
+        "show_menu_bar": false,
         "menu_bar_mnemonics": true,
-        "show_tab_bar": true,
-        "show_status_bar": true,
-        "show_prompt_line": true,
+        "show_tab_bar": false,
+        "show_status_bar": false,
+        "show_prompt_line": false,
         "show_vertical_scrollbar": true,
         "show_horizontal_scrollbar": false,
         "show_tilde": true,
         "use_terminal_bg": false,
-        "cursor_style": "default",
+        "cursor_style": "blinking_bar",
         "rulers": [],
-        "whitespace_show": true,
+        "whitespace_show": false,
         "whitespace_spaces_leading": false,
         "whitespace_spaces_inner": false,
         "whitespace_spaces_trailing": false,
@@ -63,7 +63,7 @@
         "auto_surround": true,
         "scroll_offset": 3,
         "default_line_ending": "lf",
-        "trim_trailing_whitespace_on_save": false,
+        "trim_trailing_whitespace_on_save": true,
         "ensure_final_newline_on_save": false,
         "highlight_matching_brackets": true,
         "rainbow_brackets": true,
@@ -263,7 +263,7 @@
         "highlight_current_line": {
           "description": "Highlight the line containing the cursor",
           "type": "boolean",
-          "default": true,
+          "default": false,
           "x-section": "Display"
         },
         "line_wrap": {
@@ -307,9 +307,9 @@
           "x-section": "Display"
         },
         "show_menu_bar": {
-          "description": "Whether the menu bar is visible by default.\nThe menu bar provides access to menus (File, Edit, View, etc.) at the top of the screen.\nCan be toggled at runtime via command palette or keybinding.\nDefault: true",
+          "description": "Whether the menu bar is visible by default.\nThe menu bar provides access to menus (File, Edit, View, etc.) at the top of the screen.\nCan be toggled at runtime via command palette or keybinding.\nDefault: false",
           "type": "boolean",
-          "default": true,
+          "default": false,
           "x-section": "Display"
         },
         "menu_bar_mnemonics": {
@@ -319,21 +319,21 @@
           "x-section": "Display"
         },
         "show_tab_bar": {
-          "description": "Whether the tab bar is visible by default.\nThe tab bar shows open files in each split pane.\nCan be toggled at runtime via command palette or keybinding.\nDefault: true",
+          "description": "Whether the tab bar is visible by default.\nThe tab bar shows open files in each split pane.\nCan be toggled at runtime via command palette or keybinding.\nDefault: false",
           "type": "boolean",
-          "default": true,
+          "default": false,
           "x-section": "Display"
         },
         "show_status_bar": {
-          "description": "Whether the status bar is visible by default.\nThe status bar shows file info, cursor position, and editor status at the bottom of the screen.\nCan be toggled at runtime via command palette or keybinding.\nDefault: true",
+          "description": "Whether the status bar is visible by default.\nThe status bar shows file info, cursor position, and editor status at the bottom of the screen.\nCan be toggled at runtime via command palette or keybinding.\nDefault: false",
           "type": "boolean",
-          "default": true,
+          "default": false,
           "x-section": "Display"
         },
         "show_prompt_line": {
-          "description": "Whether the prompt line is visible by default.\nThe prompt line is the bottom-most line used for command input, search, file open, etc.\nWhen hidden, the prompt line only appears when a prompt is active.\nCan be toggled at runtime via command palette or keybinding.\nDefault: true",
+          "description": "Whether the prompt line is visible by default.\nThe prompt line is the bottom-most line used for command input, search, file open, etc.\nWhen hidden, the prompt line only appears when a prompt is active.\nCan be toggled at runtime via command palette or keybinding.\nDefault: false",
           "type": "boolean",
-          "default": true,
+          "default": false,
           "x-section": "Display"
         },
         "show_vertical_scrollbar": {
@@ -361,9 +361,9 @@
           "x-section": "Display"
         },
         "cursor_style": {
-          "description": "Cursor style for the terminal cursor.\nOptions: blinking_block, steady_block, blinking_bar, steady_bar, blinking_underline, steady_underline\nDefault: blinking_block",
+          "description": "Cursor style for the terminal cursor.\nOptions: blinking_block, steady_block, blinking_bar, steady_bar, blinking_underline, steady_underline\nDefault: blinking_bar",
           "$ref": "#/$defs/CursorStyle",
-          "default": "default",
+          "default": "blinking_bar",
           "x-section": "Display"
         },
         "rulers": {
@@ -378,9 +378,9 @@
           "x-section": "Display"
         },
         "whitespace_show": {
-          "description": "Master toggle for whitespace indicator visibility.\nWhen disabled, no whitespace indicators (·, →) are shown regardless\nof the per-position settings below.\nDefault: true",
+          "description": "Master toggle for whitespace indicator visibility.\nWhen disabled, no whitespace indicators are shown regardless\nof the per-position settings below.\nDefault: false",
           "type": "boolean",
-          "default": true,
+          "default": false,
           "x-section": "Whitespace"
         },
         "whitespace_spaces_leading": {
@@ -466,9 +466,9 @@
           "x-section": "Editing"
         },
         "trim_trailing_whitespace_on_save": {
-          "description": "Remove trailing whitespace from lines when saving.\nDefault: false",
+          "description": "Remove trailing whitespace from lines when saving.\nDefault: true",
           "type": "boolean",
-          "default": false,
+          "default": true,
           "x-section": "Editing"
         },
         "ensure_final_newline_on_save": {

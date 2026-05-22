@@ -427,7 +427,11 @@ fn default_keybinding_map_name() -> KeybindingMapName {
 }
 
 fn default_theme_name() -> ThemeName {
-    ThemeName("high-contrast".to_string())
+    /*
+    CDXC:GteDefaults 2026-05-23-01:51:
+    Ghostex prompt editing should match the user's current gte setup out of the box: use the built-in dark theme instead of Fresh's high-contrast theme so terminal-launched prompt editing starts with the same calmer palette as the configured app.
+    */
+    ThemeName("dark".to_string())
 }
 
 /// Resolved whitespace indicator visibility for a buffer.
@@ -1401,7 +1405,11 @@ impl Default for EditorConfig {
             relative_line_numbers: false,
             scroll_offset: default_scroll_offset(),
             syntax_highlighting: true,
-            highlight_current_line: true,
+            /*
+            CDXC:GteDefaults 2026-05-23-01:51:
+            The built-in gte prompt-editing defaults should mirror the user's current config. Keep the buffer visually quiet by default: no current-line highlight, trim trailing whitespace on save, use a blinking bar cursor, and avoid changing the launching terminal's title.
+            */
+            highlight_current_line: false,
             highlight_current_column: false,
             line_wrap: true,
             wrap_indent: true,
@@ -1430,11 +1438,11 @@ impl Default for EditorConfig {
             read_concurrency: default_read_concurrency(),
             file_tree_poll_interval_ms: default_file_tree_poll_interval(),
             default_line_ending: LineEndingOption::default(),
-            trim_trailing_whitespace_on_save: false,
+            trim_trailing_whitespace_on_save: true,
             ensure_final_newline_on_save: false,
             highlight_matching_brackets: true,
             rainbow_brackets: true,
-            cursor_style: CursorStyle::default(),
+            cursor_style: CursorStyle::BlinkingBar,
             keyboard_disambiguate_escape_codes: true,
             keyboard_report_event_types: false,
             keyboard_report_alternate_keys: true,
@@ -1453,7 +1461,7 @@ impl Default for EditorConfig {
             show_horizontal_scrollbar: false,
             show_tilde: true,
             use_terminal_bg: false,
-            set_window_title: true,
+            set_window_title: false,
             rulers: Vec::new(),
             whitespace_show: false,
             whitespace_spaces_leading: false,
@@ -6974,7 +6982,7 @@ mod tests {
         assert_eq!(buffer_config.tab_size, config.editor.tab_size);
         assert_eq!(buffer_config.auto_indent, config.editor.auto_indent);
         assert!(!buffer_config.use_tabs); // Default is spaces
-        assert!(buffer_config.whitespace.any_tabs()); // Tabs visible by default
+        assert!(!buffer_config.whitespace.any_tabs()); // CDXC:GteDefaults 2026-05-23-01:51: Whitespace indicators are off by default for quieter terminal prompt editing.
         assert!(buffer_config.formatter.is_none());
         assert!(!buffer_config.format_on_save);
     }
