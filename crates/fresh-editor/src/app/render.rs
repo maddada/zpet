@@ -678,7 +678,7 @@ impl Editor {
         let chord_state_cloned = self.chord_state.clone(); // Clone the chord state
 
         // Get update availability info. If the install method is unknown,
-        // default to Homebrew because Zapet's primary distribution is brew.
+        // default to Homebrew because Gte's primary distribution is brew.
         let update_available = self
             .get_update_result()
             .filter(|result| result.update_available)

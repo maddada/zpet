@@ -629,6 +629,10 @@ fn modifiers_from_param(param: u8) -> KeyModifiers {
             KeyModifiers::CONTROL.bits()
         } else {
             0
+        } | if param & 8 != 0 {
+            KeyModifiers::SUPER.bits()
+        } else {
+            0
         },
     )
 }
@@ -725,6 +729,59 @@ mod tests {
                 assert!(ke.modifiers.contains(KeyModifiers::SHIFT));
             }
             _ => panic!("Expected Shift+Up"),
+        }
+    }
+
+    #[test]
+    fn test_csi_modifier_super_is_preserved() {
+        let mut parser = InputParser::new();
+        // Super+a: ESC [ 97 ; 9 u (9 = 1 + super bit)
+        let events = parser.parse(b"\x1b[97;9u");
+        match &events[0] {
+            Event::Key(ke) => {
+                assert_eq!(ke.code, KeyCode::Char('a'));
+                assert!(ke.modifiers.contains(KeyModifiers::SUPER));
+                assert!(!ke.modifiers.contains(KeyModifiers::CONTROL));
+            }
+            _ => panic!("Expected Super+a"),
+        }
+    }
+
+    #[test]
+    fn test_csi_function_key_modifier_super_is_preserved() {
+        let mut parser = InputParser::new();
+        // Super+Home: ESC [ 1 ; 9 H (9 = 1 + super bit)
+        let events = parser.parse(b"\x1b[1;9H");
+        match &events[0] {
+            Event::Key(ke) => {
+                assert_eq!(ke.code, KeyCode::Home);
+                assert!(ke.modifiers.contains(KeyModifiers::SUPER));
+                assert!(!ke.modifiers.contains(KeyModifiers::CONTROL));
+            }
+            _ => panic!("Expected Super+Home"),
+        }
+    }
+
+    #[test]
+    fn test_option_delete_keys_are_parsed_with_alt_modifier() {
+        let mut parser = InputParser::new();
+        let events = parser.parse(b"\x1b\x7f");
+        match &events[0] {
+            Event::Key(ke) => {
+                assert_eq!(ke.code, KeyCode::Backspace);
+                assert!(ke.modifiers.contains(KeyModifiers::ALT));
+            }
+            _ => panic!("Expected Option+Backspace"),
+        }
+
+        let mut parser = InputParser::new();
+        let events = parser.parse(b"\x1b[3;3~");
+        match &events[0] {
+            Event::Key(ke) => {
+                assert_eq!(ke.code, KeyCode::Delete);
+                assert!(ke.modifiers.contains(KeyModifiers::ALT));
+            }
+            _ => panic!("Expected Option+Delete"),
         }
     }
 
@@ -1002,6 +1059,22 @@ mod tests {
         match &events[0] {
             Event::Mouse(_) => {} // Mouse event parsed correctly
             other => panic!("Expected mouse event, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_sgr_mouse_ctrl_modifier_for_command_click_bridge() {
+        let mut parser = InputParser::new();
+        let events = parser.parse(b"\x1b[<16;10;5M");
+        assert_eq!(events.len(), 1);
+        match &events[0] {
+            Event::Mouse(me) => {
+                assert!(matches!(me.kind, MouseEventKind::Down(MouseButton::Left)));
+                assert_eq!(me.column, 9);
+                assert_eq!(me.row, 4);
+                assert!(me.modifiers.contains(KeyModifiers::CONTROL));
+            }
+            _ => panic!("Expected mouse event, got {:?}", events[0]),
         }
     }
 

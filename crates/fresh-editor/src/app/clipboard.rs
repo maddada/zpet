@@ -49,10 +49,10 @@ mod tests {
 
     #[test]
     fn image_markdown_keeps_simple_absolute_paths_plain() {
-        let path = Path::new("/Users/madda/.tmp/.zapet/images/image-2026-05-10-12-30-00.png");
+        let path = Path::new("/Users/madda/.tmp/.gte/images/image-2026-05-10-12-30-00.png");
         assert_eq!(
             markdown_image_link(1, path),
-            "[Image #1](/Users/madda/.tmp/.zapet/images/image-2026-05-10-12-30-00.png)"
+            "[Image #1](/Users/madda/.tmp/.gte/images/image-2026-05-10-12-30-00.png)"
         );
     }
 
@@ -683,7 +683,7 @@ impl Editor {
             return false;
         };
 
-        match self.write_zapet_image(&png_bytes, "png") {
+        match self.write_gte_image(&png_bytes, "png") {
             Ok(path) => {
                 let number = self.next_image_number();
                 self.paste_text(markdown_image_link(number, &path));
@@ -701,16 +701,16 @@ impl Editor {
         let path = if self.authority.filesystem.remote_connection_info().is_some() {
             let bytes = std::fs::read(path)?;
             let ext = supported_image_extension(path).unwrap_or("png");
-            self.write_zapet_image(&bytes, ext)?
+            self.write_gte_image(&bytes, ext)?
         } else {
             path.to_path_buf()
         };
         Ok(markdown_image_link(number, &path))
     }
 
-    fn write_zapet_image(&self, bytes: &[u8], extension: &str) -> std::io::Result<PathBuf> {
+    fn write_gte_image(&self, bytes: &[u8], extension: &str) -> std::io::Result<PathBuf> {
         let home = self.authority.filesystem.home_dir()?;
-        let dir = home.join(".tmp").join(".zapet").join("images");
+        let dir = home.join(".tmp").join(".gte").join("images");
         self.authority.filesystem.create_dir_all(&dir)?;
 
         let timestamp = chrono::Local::now().format("image-%Y-%m-%d-%H-%M-%S");

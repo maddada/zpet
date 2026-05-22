@@ -1,9 +1,9 @@
 [package]
-name = "zapet"
+name = "gte"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
-default-run = "zapet"
+default-run = "gte"
 description = "zmux agent prompt editor tui"
 license.workspace = true
 repository.workspace = true
@@ -12,13 +12,13 @@ keywords = ["editor", "terminal", "tui", "text-editor", "lsp"]
 categories = ["command-line-utilities", "text-editors"]
 
 [[bin]]
-name = "zapet"
+name = "gte"
 path = "src/main.rs"
 required-features = ["runtime"]
 
 [[bin]]
-name = "zapet-ssh-image"
-path = "src/bin/zapet_ssh_image.rs"
+name = "gte-ssh-image"
+path = "src/bin/gte_ssh_image.rs"
 required-features = ["runtime"]
 
 [[bin]]

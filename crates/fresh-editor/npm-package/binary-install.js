@@ -5,7 +5,7 @@ const { execSync } = require('child_process');
 const { getBinaryInfo } = require('./binary');
 
 const VERSION = require('./package.json').version;
-const REPO = 'sinelaw/fresh';
+const REPO = 'maddada/gte';
 
 // Retry helper for Windows file locking issues
 async function withRetry(fn, retries = 5) {

@@ -1,16 +1,30 @@
 # Release Notes
 
+## 0.3.8
+
+### Improvements
+
+* **Renamed the terminal editor to gte**: Package metadata, command names, install scripts, docs, update prompts, telemetry identifiers, and helper binaries now use `gte` / `gte-ssh-image` instead of the old Zapet/zpet names.
+
+* **Inline terminal prompt editing**: When Ghostex is configured to use gte for prompt editing, Ctrl+G launches the editor inside the terminal that requested it instead of opening a floating native editor window.
+
+* **Cmd/Ctrl-click path opening with hover affordance**: Holding Cmd or Ctrl over Markdown links, absolute paths, or `file://` URLs now underlines the openable target inside gte; clicking opens the target with the system default app.
+
+* **Mac editing shortcuts**: Cmd+S saves and quits, Option+Delete deletes one word forward, Option+Backspace deletes one word backward, and Option+Left moves to the start of the line without triggering select-all.
+
+* **Configurable gte background**: gte defaults to `#1e1e1e`, with a Ghostex setting to override the terminal-editor background when gte is selected.
+
 ## 0.3.7
 
 ### Improvements
 
-* **Zapet update checks now point at Zapet releases**: The updater now checks `maddada/zapet` instead of upstream Fresh and identifies itself as `zapet-update-checker`.
+* **Gte update checks now point at Gte releases**: The updater now checks `maddada/gte` instead of upstream Fresh and identifies itself as `gte-update-checker`.
 
-* **Update notices show the Homebrew command**: The status bar and startup update message now show `brew upgrade zapet` as the default upgrade path, including for unknown install methods.
+* **Update notices show the Homebrew command**: The status bar and startup update message now show `brew upgrade gte` as the default upgrade path, including for unknown install methods.
 
-* **Update checks are debounced every six hours**: Update checks now use their own six-hour stamp file, separate from daily telemetry, so Zapet can notice releases sooner without sending telemetry more than once per day.
+* **Update checks are debounced every six hours**: Update checks now use their own six-hour stamp file, separate from daily telemetry, so Gte can notice releases sooner without sending telemetry more than once per day.
 
-* **Telemetry reports the Zapet command name**: The anonymous open event now reports `zapet` instead of `fresh`.
+* **Telemetry reports the Gte command name**: The anonymous open event now reports `gte` instead of `fresh`.
 
 ### Under the Hood
 
@@ -24,7 +38,7 @@
 
 * **Mac-friendly terminal key handling**: Command chords are normalized to Control bindings where terminals forward them, and Option-arrow escape forms map to word navigation.
 
-* **Lean Zapet defaults**: Menu/tab/status bars, whitespace markers, and cursor animations default off for a quieter prompt-editing surface.
+* **Lean Gte defaults**: Menu/tab/status bars, whitespace markers, and cursor animations default off for a quieter prompt-editing surface.
 
 * **Shift+Enter inserts a newline**: The default keymap now treats Shift+Enter like Enter in normal editing contexts.
 

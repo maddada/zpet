@@ -237,7 +237,7 @@
     "cmd.change_to_end": "Zmenit do konce radku",
     "cmd.paste_after": "Vlozit za",
     "cmd.paste_before": "Vlozit pred",
-    "cmd.undo": "Zpet",
+    "cmd.undo": "Gte",
     "cmd.redo": "Znovu",
     "cmd.join_lines": "Spojit radky"
   },

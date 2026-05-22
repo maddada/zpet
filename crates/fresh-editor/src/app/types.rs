@@ -988,6 +988,13 @@ impl TabDragState {
     }
 }
 
+#[derive(Debug, Clone)]
+pub(super) struct ClickablePathHoverOverlay {
+    pub buffer_id: BufferId,
+    pub range: Range<usize>,
+    pub handle: crate::view::overlay::OverlayHandle,
+}
+
 /// Mouse state tracking
 #[derive(Debug, Clone, Default)]
 pub(super) struct MouseState {
@@ -1029,6 +1036,8 @@ pub(super) struct MouseState {
     pub drag_start_explorer_width: Option<crate::config::ExplorerWidth>,
     /// Current hover target (if any)
     pub hover_target: Option<HoverTarget>,
+    /// Underline overlay for the path/link that can be opened with Cmd/Ctrl-click.
+    pub clickable_path_hover: Option<ClickablePathHoverOverlay>,
     /// Whether we're currently doing a text selection drag
     pub dragging_text_selection: bool,
     /// The split where text selection started

@@ -136,7 +136,7 @@ fn test_update_notification_appears_in_status_bar() {
         status_bar
     );
     assert!(
-        status_bar.contains("brew upgrade zapet"),
+        status_bar.contains("brew upgrade gte"),
         "Status bar should include the brew update command. Status bar: '{}'",
         status_bar
     );

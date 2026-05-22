@@ -133,6 +133,7 @@ impl Editor {
                     needs_render = true;
                     return Ok(needs_render);
                 }
+                self.update_clickable_path_hover(col, row, mouse_event.modifiers)?;
                 self.handle_mouse_click(col, row, mouse_event.modifiers)?;
                 needs_render = true;
             }
@@ -217,7 +218,9 @@ impl Editor {
                 // Only re-render if hover target actually changed
                 // (preserve needs_render if already set, e.g., for GPM cursor updates)
                 let hover_changed = self.update_hover_target(col, row);
-                needs_render = needs_render || hover_changed;
+                let clickable_hover_changed =
+                    self.update_clickable_path_hover(col, row, mouse_event.modifiers)?;
+                needs_render = needs_render || hover_changed || clickable_hover_changed;
 
                 // Update theme info popup button highlight on hover
                 if let Some((popup_rect, button_row_offset)) = self.theme_info_popup_rect() {

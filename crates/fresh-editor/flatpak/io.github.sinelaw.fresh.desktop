@@ -1,8 +1,8 @@
 [Desktop Entry]
-Name=zapet
+Name=gte
 GenericName=agent prompt editor tui
 Comment=zmux agent prompt editor tui
-Exec=zapet %F
+Exec=gte %F
 Icon=io.github.sinelaw.fresh
 Terminal=true
 Type=Application

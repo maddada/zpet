@@ -19,14 +19,14 @@ use std::time::Duration;
 /// The current version of the editor
 pub const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// Default GitHub releases API URL for Zapet.
-pub const DEFAULT_RELEASES_URL: &str = "https://api.github.com/repos/maddada/zapet/releases/latest";
+/// Default GitHub releases API URL for Gte.
+pub const DEFAULT_RELEASES_URL: &str = "https://api.github.com/repos/maddada/gte/releases/latest";
 
-/// How often Zapet may contact the releases endpoint.
+/// How often Gte may contact the releases endpoint.
 pub const UPDATE_CHECK_INTERVAL: Duration = Duration::from_secs(6 * 60 * 60);
 
 /// Homebrew command shown as the default update path.
-pub const HOMEBREW_UPDATE_COMMAND: &str = "brew upgrade zapet";
+pub const HOMEBREW_UPDATE_COMMAND: &str = "brew upgrade gte";
 
 const UPDATE_STAMP_FILE_NAME: &str = "update_check_stamp";
 
@@ -52,9 +52,9 @@ impl InstallMethod {
     pub fn update_command(&self) -> Option<&'static str> {
         Some(match self {
             Self::Homebrew => HOMEBREW_UPDATE_COMMAND,
-            Self::Cargo => "cargo install --locked zapet",
-            Self::Npm => "npm update -g zapet",
-            Self::Aur => "yay -Syu zapet  # or use your AUR helper",
+            Self::Cargo => "cargo install --locked gte",
+            Self::Npm => "npm update -g gte",
+            Self::Aur => "yay -Syu gte  # or use your AUR helper",
             Self::PackageManager => "Update using your system package manager",
             Self::Unknown => return None,
         })
@@ -322,7 +322,7 @@ pub fn fetch_latest_version(url: &str) -> Result<String, String> {
         .new_agent();
     let response = agent
         .get(url)
-        .header("User-Agent", "zapet-update-checker")
+        .header("User-Agent", "gte-update-checker")
         .header("Accept", "application/vnd.github.v3+json")
         .call()
         .map_err(|e| {
@@ -503,7 +503,7 @@ mod tests {
     fn test_detect_install_method() {
         let cases = [
             (
-                "/opt/homebrew/Cellar/zapet/0.3.6/bin/zapet",
+                "/opt/homebrew/Cellar/gte/0.3.6/bin/gte",
                 InstallMethod::Homebrew,
             ),
             (
@@ -514,17 +514,17 @@ mod tests {
                 "/home/linuxbrew/.linuxbrew/bin/fresh",
                 InstallMethod::Homebrew,
             ),
-            ("/home/user/.cargo/bin/zapet", InstallMethod::Cargo),
+            ("/home/user/.cargo/bin/gte", InstallMethod::Cargo),
             (
-                "C:\\Users\\user\\.cargo\\bin\\zapet.exe",
+                "C:\\Users\\user\\.cargo\\bin\\gte.exe",
                 InstallMethod::Cargo,
             ),
             (
-                "/usr/local/lib/node_modules/zapet/bin/zapet",
+                "/usr/local/lib/node_modules/gte/bin/gte",
                 InstallMethod::Npm,
             ),
-            ("/usr/local/bin/zapet", InstallMethod::PackageManager),
-            ("/home/user/downloads/zapet", InstallMethod::Unknown),
+            ("/usr/local/bin/gte", InstallMethod::PackageManager),
+            ("/home/user/downloads/gte", InstallMethod::Unknown),
         ];
         for (path, expected) in cases {
             assert_eq!(
@@ -537,18 +537,18 @@ mod tests {
     }
 
     #[test]
-    fn test_update_commands_use_zapet_packages() {
+    fn test_update_commands_use_gte_packages() {
         assert_eq!(
             InstallMethod::Homebrew.update_command(),
-            Some("brew upgrade zapet")
+            Some("brew upgrade gte")
         );
         assert_eq!(
             InstallMethod::Cargo.update_command(),
-            Some("cargo install --locked zapet")
+            Some("cargo install --locked gte")
         );
         assert_eq!(
             InstallMethod::Npm.update_command(),
-            Some("npm update -g zapet")
+            Some("npm update -g gte")
         );
     }
 

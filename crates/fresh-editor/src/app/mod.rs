@@ -1594,8 +1594,9 @@ mod tests {
     }
 
     #[test]
-    fn test_command_v_pastes_via_control_alias() {
-        let config = Config::default();
+    fn test_command_v_pastes_via_explicit_macos_binding() {
+        let mut config = Config::default();
+        config.active_keybinding_map = crate::config::KeybindingMapName("macos".to_string());
         let (dir_context, _temp) = test_dir_context();
         let mut editor = Editor::new(
             config,

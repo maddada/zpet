@@ -34,7 +34,7 @@ struct Args {
 
 fn main() {
     if let Err(e) = run() {
-        eprintln!("zapet-ssh-image: {}", e);
+        eprintln!("gte-ssh-image: {}", e);
         std::process::exit(1);
     }
 }
@@ -45,7 +45,7 @@ fn run() -> Result<(), String> {
         Some(dir) => dir,
         None => {
             let home = remote_home(&args.remote)?;
-            format!("{}/.tmp/.zapet/images", home.trim_end_matches('/'))
+            format!("{}/.tmp/.gte/images", home.trim_end_matches('/'))
         }
     };
 
@@ -83,9 +83,9 @@ fn run() -> Result<(), String> {
 }
 
 fn parse_args() -> Result<Args, String> {
-    let mut remote = env::var("ZAPET_SSH_REMOTE").ok();
-    let mut remote_dir = env::var("ZAPET_SSH_REMOTE_DIR").ok();
-    let mut number = env::var("ZAPET_IMAGE_NUMBER")
+    let mut remote = env::var("GTE_SSH_REMOTE").ok();
+    let mut remote_dir = env::var("GTE_SSH_REMOTE_DIR").ok();
+    let mut number = env::var("GTE_IMAGE_NUMBER")
         .ok()
         .and_then(|value| value.parse::<usize>().ok())
         .unwrap_or(1);
@@ -118,7 +118,7 @@ fn parse_args() -> Result<Args, String> {
     }
 
     let remote = remote.ok_or_else(|| {
-        "missing SSH target; pass --remote user@host or set ZAPET_SSH_REMOTE".to_string()
+        "missing SSH target; pass --remote user@host or set GTE_SSH_REMOTE".to_string()
     })?;
 
     Ok(Args {
@@ -131,7 +131,7 @@ fn parse_args() -> Result<Args, String> {
 
 fn print_usage() {
     println!(
-        "Usage: zapet-ssh-image --remote user@host [--remote-dir /abs/path] [--number N] [--stdout|--clipboard]"
+        "Usage: gte-ssh-image --remote user@host [--remote-dir /abs/path] [--number N] [--stdout|--clipboard]"
     );
 }
 
@@ -157,7 +157,7 @@ fn clipboard_image_source() -> Result<ClipboardImageSource, String> {
     let bytes = get_system_clipboard_image_png()
         .ok_or_else(|| "no image found in clipboard".to_string())?;
     let path = env::temp_dir().join(format!(
-        "zapet-image-{}-{}.png",
+        "gte-image-{}-{}.png",
         std::process::id(),
         chrono::Local::now().format("%Y-%m-%d-%H-%M-%S")
     ));

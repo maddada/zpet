@@ -123,6 +123,168 @@
       "when": "normal"
     },
     {
+      "comment": "Cmd+S -> Save and quit (when terminal forwards Command/Super)",
+      "key": "s",
+      "modifiers": ["super"],
+      "action": "save_and_quit",
+      "args": {},
+      "when": "normal"
+    },
+    {
+      "comment": "Cmd+C -> Copy",
+      "key": "c",
+      "modifiers": ["super"],
+      "action": "copy",
+      "args": {},
+      "when": "normal"
+    },
+    {
+      "comment": "Cmd+X -> Cut",
+      "key": "x",
+      "modifiers": ["super"],
+      "action": "cut",
+      "args": {},
+      "when": "normal"
+    },
+    {
+      "comment": "Cmd+V -> Paste",
+      "key": "v",
+      "modifiers": ["super"],
+      "action": "paste",
+      "args": {},
+      "when": "normal"
+    },
+    {
+      "comment": "Cmd+Z -> Undo",
+      "key": "z",
+      "modifiers": ["super"],
+      "action": "undo",
+      "args": {},
+      "when": "normal"
+    },
+    {
+      "comment": "Cmd+Shift+Z -> Redo",
+      "key": "z",
+      "modifiers": ["super", "shift"],
+      "action": "redo",
+      "args": {},
+      "when": "normal"
+    },
+    {
+      "comment": "Cmd+A -> Select all",
+      "key": "a",
+      "modifiers": ["super"],
+      "action": "select_all",
+      "args": {},
+      "when": "normal"
+    },
+    {
+      "comment": "Cmd+P -> Quick Open",
+      "key": "p",
+      "modifiers": ["super"],
+      "action": "quick_open",
+      "args": {},
+      "when": "global"
+    },
+    {
+      "comment": "Cmd+Shift+P -> Command palette",
+      "key": "p",
+      "modifiers": ["super", "shift"],
+      "action": "command_palette",
+      "args": {},
+      "when": "global"
+    },
+    {
+      "comment": "Cmd+Left/Home -> Move to line start",
+      "key": "Left",
+      "modifiers": ["super"],
+      "action": "move_line_start",
+      "args": {},
+      "when": "normal"
+    },
+    {
+      "key": "Home",
+      "modifiers": ["super"],
+      "action": "move_line_start",
+      "args": {},
+      "when": "normal"
+    },
+    {
+      "comment": "Cmd+Right/End -> Move to line end",
+      "key": "Right",
+      "modifiers": ["super"],
+      "action": "move_line_end",
+      "args": {},
+      "when": "normal"
+    },
+    {
+      "key": "End",
+      "modifiers": ["super"],
+      "action": "move_line_end",
+      "args": {},
+      "when": "normal"
+    },
+    {
+      "comment": "Cmd+Shift+Left/Home -> Select to line start",
+      "key": "Left",
+      "modifiers": ["super", "shift"],
+      "action": "select_line_start",
+      "args": {},
+      "when": "normal"
+    },
+    {
+      "key": "Home",
+      "modifiers": ["super", "shift"],
+      "action": "select_line_start",
+      "args": {},
+      "when": "normal"
+    },
+    {
+      "comment": "Cmd+Shift+Right/End -> Select to line end",
+      "key": "Right",
+      "modifiers": ["super", "shift"],
+      "action": "select_line_end",
+      "args": {},
+      "when": "normal"
+    },
+    {
+      "key": "End",
+      "modifiers": ["super", "shift"],
+      "action": "select_line_end",
+      "args": {},
+      "when": "normal"
+    },
+    {
+      "comment": "Cmd+Up/Down -> Move to document start/end",
+      "key": "Up",
+      "modifiers": ["super"],
+      "action": "move_document_start",
+      "args": {},
+      "when": "normal"
+    },
+    {
+      "key": "Down",
+      "modifiers": ["super"],
+      "action": "move_document_end",
+      "args": {},
+      "when": "normal"
+    },
+    {
+      "comment": "Cmd+Shift+Up/Down -> Select to document start/end",
+      "key": "Up",
+      "modifiers": ["super", "shift"],
+      "action": "select_document_start",
+      "args": {},
+      "when": "normal"
+    },
+    {
+      "key": "Down",
+      "modifiers": ["super", "shift"],
+      "action": "select_document_end",
+      "args": {},
+      "when": "normal"
+    },
+    {
       "comment": "Alt+Up/Down -> Move line/selection (Mac: Option+Up/Down)",
       "key": "Up",
       "modifiers": ["alt"],
@@ -138,10 +300,25 @@
       "when": "normal"
     },
     {
-      "comment": "Ctrl+A -> Select all",
+      "comment": "Option+Backspace/Delete -> Delete word backward/forward",
+      "key": "Backspace",
+      "modifiers": ["alt"],
+      "action": "delete_word_backward",
+      "args": {},
+      "when": "normal"
+    },
+    {
+      "key": "Delete",
+      "modifiers": ["alt"],
+      "action": "delete_word_forward",
+      "args": {},
+      "when": "normal"
+    },
+    {
+      "comment": "Ctrl+A -> Line start (readline, and terminal fallback for Cmd+Left)",
       "key": "a",
       "modifiers": ["ctrl"],
-      "action": "select_all",
+      "action": "move_line_start",
       "args": {},
       "when": "normal"
     },
@@ -150,6 +327,21 @@
       "key": "e",
       "modifiers": ["ctrl"],
       "action": "move_line_end",
+      "args": {},
+      "when": "normal"
+    },
+    {
+      "comment": "Ctrl+Shift+A/E -> Select to line start/end fallbacks",
+      "key": "a",
+      "modifiers": ["ctrl", "shift"],
+      "action": "select_line_start",
+      "args": {},
+      "when": "normal"
+    },
+    {
+      "key": "e",
+      "modifiers": ["ctrl", "shift"],
+      "action": "select_line_end",
       "args": {},
       "when": "normal"
     },
@@ -186,10 +378,10 @@
       "when": "normal"
     },
     {
-      "comment": "Alt+Left -> Word left (VS Code style)",
+      "comment": "Option+Left -> Line start; keep Alt+B as the readline word-left escape form",
       "key": "Left",
       "modifiers": ["alt"],
-      "action": "move_word_left",
+      "action": "move_line_start",
       "args": {},
       "when": "normal"
     },
@@ -325,7 +517,7 @@
     {
       "key": "Left",
       "modifiers": ["alt"],
-      "action": "prompt_move_word_left",
+      "action": "prompt_move_start",
       "args": {},
       "when": "prompt"
     },
@@ -363,6 +555,21 @@
       "key": "w",
       "modifiers": ["ctrl"],
       "action": "prompt_delete_word_backward",
+      "args": {},
+      "when": "prompt"
+    },
+    {
+      "comment": "Option+Backspace/Delete -> Delete prompt word backward/forward",
+      "key": "Backspace",
+      "modifiers": ["alt"],
+      "action": "prompt_delete_word_backward",
+      "args": {},
+      "when": "prompt"
+    },
+    {
+      "key": "Delete",
+      "modifiers": ["alt"],
+      "action": "prompt_delete_word_forward",
       "args": {},
       "when": "prompt"
     },

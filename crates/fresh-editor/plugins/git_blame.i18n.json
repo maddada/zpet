@@ -43,7 +43,7 @@
     "cmd.git_blame_desc": "Zobrazit git blame pro aktualni soubor (styl magit)",
     "cmd.git_blame_close": "Git Blame: Zavrit",
     "cmd.git_blame_close_desc": "Zavrit panel git blame",
-    "cmd.git_blame_go_back": "Git Blame: Zpet",
+    "cmd.git_blame_go_back": "Git Blame: Gte",
     "cmd.git_blame_go_back_desc": "Zobrazit blame v rodicovskem commitu aktualniho radku",
 
     "status.already_open": "Git blame je jiz otevreny",

@@ -134,7 +134,7 @@ pub fn track_open(unique_id: &str) {
     let event = Event {
         version: Some(env!("CARGO_PKG_VERSION")),
         os: Some(format!("{}-{}", OS, ARCH)),
-        command: Some("zapet"),
+        command: Some("gte"),
         value: std::env::var("TERM").ok(),
         uid: Some(unique_id.to_string()),
     };

@@ -1120,6 +1120,20 @@
       "when": "prompt"
     },
     {
+      "key": "Left",
+      "modifiers": ["alt"],
+      "action": "prompt_move_word_left",
+      "args": {},
+      "when": "prompt"
+    },
+    {
+      "key": "Right",
+      "modifiers": ["alt"],
+      "action": "prompt_move_word_right",
+      "args": {},
+      "when": "prompt"
+    },
+    {
       "comment": "Prompt context - Word deletion",
       "key": "Backspace",
       "modifiers": ["ctrl"],

@@ -39,9 +39,9 @@ const BEFORE_HELP_EN: &str =
 // The doc comments on `Cli` and its fields are intentionally short and
 // only used by the derive — the English `before_help` banner below is
 // the user's escape hatch back to a known language.
-/// zapet
+/// gte
 #[derive(Parser, Debug)]
-#[command(name = "zapet")]
+#[command(name = "gte")]
 #[command(version, propagate_version = true)]
 #[command(before_help = BEFORE_HELP_EN)]
 struct Cli {
@@ -123,11 +123,11 @@ struct Cli {
     ssh_url: Option<String>,
 
     // === Deprecated flags from pre-subcommand CLI (hidden, with warnings) ===
-    /// [deprecated: use `zapet config show`]
+    /// [deprecated: use `gte config show`]
     #[arg(long, hide = true)]
     dump_config: bool,
 
-    /// [deprecated: use `zapet config paths`]
+    /// [deprecated: use `gte config paths`]
     #[arg(long, hide = true)]
     show_paths: bool,
 
@@ -135,7 +135,7 @@ struct Cli {
     #[arg(long, hide = true, value_name = "PLUGIN_PATH")]
     check_plugin: Option<PathBuf>,
 
-    /// [deprecated: use `zapet init`]
+    /// [deprecated: use `gte init`]
     #[arg(long, hide = true, value_name = "TYPE")]
     init: Option<Option<String>>,
 
@@ -2533,13 +2533,13 @@ fn list_sessions_command() -> AnyhowResult<()> {
         if sessions.len() == 1 {
             let (id, display) = &sessions[0];
             if display != id {
-                println!("attach with: zapet -a  (from that directory)");
-                println!("         or: zapet -a {}", id);
+                println!("attach with: gte -a  (from that directory)");
+                println!("         or: gte -a {}", id);
             } else {
-                println!("attach with: zapet -a {}", id);
+                println!("attach with: gte -a {}", id);
             }
         } else {
-            println!("attach with: zapet -a [name]");
+            println!("attach with: gte -a [name]");
         }
     }
 
@@ -2865,7 +2865,7 @@ fn run_open_files_command(
             return run_attach(session_name, &[]);
         } else {
             eprintln!(
-                "started new session and opened {} file(s). attach with: zapet -a{}",
+                "started new session and opened {} file(s). attach with: gte -a{}",
                 file_requests.len(),
                 session_name.map_or(String::new(), |n| format!(" {}", n)),
             );
@@ -3083,7 +3083,7 @@ fn run_attach(session_name: Option<&str>, files: &[String]) -> AnyhowResult<()> 
         Ok(client::ClientExitReason::Detached) => {
             tracing::debug!("Client exit: Detached");
             eprintln!("Detached from session. Server continues running.");
-            eprintln!("reattach with: zapet -a  or  zapet session attach");
+            eprintln!("reattach with: gte -a  or  gte session attach");
         }
         Ok(client::ClientExitReason::VersionMismatch { server_version }) => {
             tracing::debug!("Client exit: VersionMismatch");
@@ -3109,13 +3109,13 @@ fn print_deprecation_warnings(cli: &Cli) {
 
     // These flags existed in master and are now reorganized into --cmd commands
     if cli.dump_config {
-        eprintln!("warning: --dump-config is deprecated, use `zapet --cmd config show` instead");
+        eprintln!("warning: --dump-config is deprecated, use `gte --cmd config show` instead");
     }
     if cli.show_paths {
-        eprintln!("warning: --show-paths is deprecated, use `zapet --cmd config paths` instead");
+        eprintln!("warning: --show-paths is deprecated, use `gte --cmd config paths` instead");
     }
     if cli.init.is_some() {
-        eprintln!("warning: --init is deprecated, use `zapet --cmd init` instead");
+        eprintln!("warning: --init is deprecated, use `gte --cmd init` instead");
     }
 }
 
@@ -3354,31 +3354,31 @@ fn build_localized_after_help() -> String {
 
     out.push_str(&format!("{}\n", t("cli.section.examples")));
     out.push_str(&format!(
-        "  zapet file.txt                               {}\n",
+        "  gte file.txt                               {}\n",
         t("cli.example.open")
     ));
     out.push_str(&format!(
-        "  zapet 'file.txt:10-20@\"Check this code\"'     {}\n",
+        "  gte 'file.txt:10-20@\"Check this code\"'     {}\n",
         t("cli.example.range_msg")
     ));
     out.push_str(&format!(
-        "  zapet -a                                     {}\n",
+        "  gte -a                                     {}\n",
         t("cli.example.attach")
     ));
     out.push_str(&format!(
-        "  zapet -a mysession                           {}\n",
+        "  gte -a mysession                           {}\n",
         t("cli.example.attach_name")
     ));
     out.push_str(&format!(
-        "  zapet --cmd session new proj                 {}\n",
+        "  gte --cmd session new proj                 {}\n",
         t("cli.example.new_session")
     ));
     out.push_str(&format!(
-        "  zapet --cmd session open-file . main.rs     {}\n",
+        "  gte --cmd session open-file . main.rs     {}\n",
         t("cli.example.open_in_dir")
     ));
     out.push_str(&format!(
-        "  zapet --cmd session open-file proj a.rs     {}\n",
+        "  gte --cmd session open-file proj a.rs     {}\n",
         t("cli.example.open_in_named")
     ));
     out.push('\n');
@@ -3387,17 +3387,17 @@ fn build_localized_after_help() -> String {
     out.push_str(&format!("  {}\n\n", t("cli.guided.wait_intro")));
     out.push_str(&format!("  {}\n\n", t("cli.guided.session_dot")));
     out.push_str(&format!("  {}\n", t("cli.guided.annotation")));
-    out.push_str("    zapet --cmd session open-file . 'src/main.rs:10-25@\"msg\"' --wait\n\n");
+    out.push_str("    gte --cmd session open-file . 'src/main.rs:10-25@\"msg\"' --wait\n\n");
     out.push_str(&format!("  {}\n", t("cli.guided.markdown")));
     out.push_str(
-        "    zapet --cmd session open-file . \\\n      $'src/main.rs:10-25@\"**Title**\\nBody text here\"' --wait\n\n",
+        "    gte --cmd session open-file . \\\n      $'src/main.rs:10-25@\"**Title**\\nBody text here\"' --wait\n\n",
     );
     out.push_str(&format!("  {}\n", t("cli.guided.walkthrough")));
-    out.push_str("    zapet --cmd session open-file . 'a.rs:1-10@\"Step 1\"' --wait\n");
-    out.push_str("    zapet --cmd session open-file . 'b.rs:5-20@\"Step 2\"' --wait\n");
-    out.push_str("    zapet --cmd session open-file . 'c.rs:30@\"Step 3\"'   --wait\n\n");
+    out.push_str("    gte --cmd session open-file . 'a.rs:1-10@\"Step 1\"' --wait\n");
+    out.push_str("    gte --cmd session open-file . 'b.rs:5-20@\"Step 2\"' --wait\n");
+    out.push_str("    gte --cmd session open-file . 'c.rs:30@\"Step 3\"'   --wait\n\n");
     out.push_str(&format!("  {}\n", t("cli.guided.git_editor")));
-    out.push_str("    git config core.editor 'zapet --cmd session open-file . --wait'\n\n");
+    out.push_str("    git config core.editor 'gte --cmd session open-file . --wait'\n\n");
 
     out.push_str(&format!(
         "{}: https://getfresh.dev/docs",
@@ -3718,7 +3718,7 @@ fn real_main() -> AnyhowResult<()> {
         if update_result.update_available {
             eprintln!();
             eprintln!(
-                "A new version of zapet is available: {} -> {}",
+                "A new version of gte is available: {} -> {}",
                 release_checker::CURRENT_VERSION,
                 update_result.latest_version
             );

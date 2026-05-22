@@ -1,8 +1,8 @@
-# zapet
+# gte
 
-zapet is the zmux agent prompt editor tui. it is a focused fork of fresh for one-file terminal editing in agentic development workflows such as claude code, opencode, and codex cli.
+gte is the zmux agent prompt editor tui. it is a focused fork of fresh for one-file terminal editing in agentic development workflows such as claude code, opencode, and codex cli.
 
-zapet can paste clipboard images as markdown links with `Ctrl+V`. Unsaved clipboard images are written to `~/.tmp/.zapet/images/` as `image-YYYY-MM-DD-HH-MM-SS.png`, and `zapet-ssh-image` provides the same local-clipboard-to-remote-path workflow for zapet sessions running inside SSH.
+gte can paste clipboard images as markdown links with `Ctrl+V`. Unsaved clipboard images are written to `~/.tmp/.gte/images/` as `image-YYYY-MM-DD-HH-MM-SS.png`, and `gte-ssh-image` provides the same local-clipboard-to-remote-path workflow for gte sessions running inside SSH.
 
 A modern, full-featured terminal text editor, **with zero configuration**. Familiar keybindings, mouse support, and IDE-level features — no learning curve required.
 
@@ -207,13 +207,13 @@ mise use github:sinelaw/fresh
 ### npm
 
 ```bash
-npm install -g zapet
+npm install -g gte
 ```
 
 Or try it without installing:
 
 ```bash
-npx zapet
+npx gte
 ```
 
 ### Using cargo-binstall
@@ -247,16 +247,16 @@ nix profile add github:sinelaw/fresh
 ### From crates.io
 
 ```bash
-cargo install --locked zapet
+cargo install --locked gte
 ```
 
 ### From source
 
 ```bash
-git clone https://github.com/sinelaw/fresh.git
-cd fresh
+git clone https://github.com/maddada/gte.git
+cd gte
 cargo build --release
-./target/release/zapet [file]
+./target/release/gte [file]
 ```
 
 ## Documentation

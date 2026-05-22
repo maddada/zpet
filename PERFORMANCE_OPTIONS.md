@@ -1,10 +1,10 @@
-# Zapet Performance Options
+# Gte Performance Options
 
-This note collects options for making Zapet lighter while staying easy to keep in sync with upstream Fresh. The preference order is:
+This note collects options for making Gte lighter while staying easy to keep in sync with upstream Fresh. The preference order is:
 
 1. Disable behavior through config or CLI flags.
 2. Use build features or packaging choices that do not require app-code forks.
-3. Only add a small Zapet-specific shim when the upstream app has no usable switch.
+3. Only add a small Gte-specific shim when the upstream app has no usable switch.
 
 ## Top Impact
 
@@ -13,19 +13,19 @@ This note collects options for making Zapet lighter while staying easy to keep i
 Best runtime option:
 
 ```sh
-zapet --safe
+gte --safe
 ```
 
 Equivalent explicit flags:
 
 ```sh
-zapet --no-plugins --no-init
+gte --no-plugins --no-init
 ```
 
 Build option:
 
 ```sh
-cargo build -p zapet --no-default-features --features runtime
+cargo build -p gte --no-default-features --features runtime
 ```
 
 Why this helps:
@@ -43,14 +43,14 @@ Tradeoff:
 
 Recommendation:
 
-Use this by default for Zapet unless we explicitly decide Zapet needs Fresh's plugin ecosystem.
+Use this by default for Gte unless we explicitly decide Gte needs Fresh's plugin ecosystem.
 
 ### 2. Disable Workspace Restore, Hot Exit, and Recovery
 
 CLI option:
 
 ```sh
-zapet --no-restore
+gte --no-restore
 ```
 
 Config option:
@@ -78,14 +78,14 @@ Tradeoff:
 
 Recommendation:
 
-Good default for a focused prompt editor. Keep `recovery_enabled` only if we expect users to draft long prompts inside Zapet.
+Good default for a focused prompt editor. Keep `recovery_enabled` only if we expect users to draft long prompts inside Gte.
 
 ### 3. Disable Update Checking and Telemetry
 
 CLI option:
 
 ```sh
-zapet --no-upgrade-check
+gte --no-upgrade-check
 ```
 
 Config option:
@@ -99,15 +99,15 @@ Config option:
 Why this helps:
 
 - Removes startup/background network work.
-- Removes behavior Zapet probably does not need if it is distributed separately.
+- Removes behavior Gte probably does not need if it is distributed separately.
 
 Tradeoff:
 
-- Users do not get Fresh/Zapet update notices from inside the app.
+- Users do not get Fresh/Gte update notices from inside the app.
 
 Recommendation:
 
-Disable by default for Zapet.
+Disable by default for Gte.
 
 ## Medium Impact
 
@@ -176,7 +176,7 @@ Tradeoff:
 
 Recommendation:
 
-Good Zapet default if the app is mainly for writing prompts and Markdown-ish text.
+Good Gte default if the app is mainly for writing prompts and Markdown-ish text.
 
 ### 6. Disable Mouse Hover and High-Volume Mouse Behavior
 
@@ -201,7 +201,7 @@ Tradeoff:
 
 Recommendation:
 
-Disable by default for Zapet.
+Disable by default for Gte.
 
 ### 7. Disable Animations
 
@@ -227,7 +227,7 @@ Tradeoff:
 
 Recommendation:
 
-Disable by default for Zapet.
+Disable by default for Gte.
 
 ### 8. Reduce Editor Chrome
 
@@ -254,7 +254,7 @@ Config option:
 Why this helps:
 
 - Less layout and render work.
-- Makes Zapet feel less like a full IDE and more like a prompt editor.
+- Makes Gte feel less like a full IDE and more like a prompt editor.
 
 Tradeoff:
 
@@ -262,7 +262,7 @@ Tradeoff:
 
 Recommendation:
 
-Good default for the Zapet profile.
+Good default for the Gte profile.
 
 ### 9. Disable System Clipboard Paths That Are Not Needed
 
@@ -311,7 +311,7 @@ Tradeoff:
 
 Recommendation:
 
-Keep system clipboard enabled for local Zapet image paste. Consider OSC 52-only for remote or terminal-only profiles.
+Keep system clipboard enabled for local Gte image paste. Consider OSC 52-only for remote or terminal-only profiles.
 
 ## Build-Time Options
 
@@ -320,7 +320,7 @@ These do not require changing application code, but they change the build/packag
 ### Runtime Without Plugins
 
 ```sh
-cargo build -p zapet --no-default-features --features runtime
+cargo build -p gte --no-default-features --features runtime
 ```
 
 Impact:
@@ -335,7 +335,7 @@ Risk:
 ### Runtime With Plugins but Without Embedded Plugins
 
 ```sh
-cargo build -p zapet --no-default-features --features runtime,plugins
+cargo build -p gte --no-default-features --features runtime,plugins
 ```
 
 Impact:
@@ -349,9 +349,9 @@ Risk:
 
 Recommendation:
 
-This is a good compromise if we want optional plugins but do not want Fresh's bundled plugin set in Zapet.
+This is a good compromise if we want optional plugins but do not want Fresh's bundled plugin set in Gte.
 
-## Options That Likely Need a Small Zapet Shim Later
+## Options That Likely Need a Small Gte Shim Later
 
 These are high-value, but the current Fresh code appears to initialize them unconditionally enough that config alone is not a complete disable.
 
@@ -362,9 +362,9 @@ Current state:
 - `syntax_highlighting: false` reduces highlighting usage.
 - The editor still builds/defaults grammar registry structures and may start background grammar work.
 
-Potential Zapet shim:
+Potential Gte shim:
 
-- Add a Zapet startup profile that skips full grammar build and uses an empty/default-minimal grammar registry.
+- Add a Gte startup profile that skips full grammar build and uses an empty/default-minimal grammar registry.
 
 ### Full LSP Manager Disable
 
@@ -373,9 +373,9 @@ Current state:
 - LSP servers can be kept from auto-starting.
 - The `LspManager` itself is still constructed.
 
-Potential Zapet shim:
+Potential Gte shim:
 
-- Add a Zapet profile where `lsp: None` is allowed from startup.
+- Add a Gte profile where `lsp: None` is allowed from startup.
 
 ### Integrated Terminal Disable
 
@@ -383,9 +383,9 @@ Current state:
 
 - Terminal manager is constructed, even if no terminal buffer is opened.
 
-Potential Zapet shim:
+Potential Gte shim:
 
-- Hide terminal commands and skip terminal manager setup in a Zapet profile.
+- Hide terminal commands and skip terminal manager setup in a Gte profile.
 
 ### File Explorer Disable
 
@@ -394,11 +394,11 @@ Current state:
 - The file explorer can be kept hidden and less active.
 - Supporting structures still exist.
 
-Potential Zapet shim:
+Potential Gte shim:
 
 - A prompt-editor profile that does not register file explorer providers or UI actions.
 
-## Recommended Zapet Baseline
+## Recommended Gte Baseline
 
 Start with this profile:
 
@@ -435,21 +435,21 @@ Start with this profile:
 Run with:
 
 ```sh
-zapet --safe --no-restore --no-upgrade-check
+gte --safe --no-restore --no-upgrade-check
 ```
 
-Best build profile for smallest upstream-friendly Zapet:
+Best build profile for smallest upstream-friendly Gte:
 
 ```sh
-cargo build -p zapet --no-default-features --features runtime
+cargo build -p gte --no-default-features --features runtime
 ```
 
 ## Decision Checklist
 
 - Keep plugins? If yes, use `runtime,plugins`; if no, use only `runtime`.
-- Keep embedded Fresh plugins? Usually no for Zapet.
+- Keep embedded Fresh plugins? Usually no for Gte.
 - Keep session restore? Usually no.
-- Keep recovery/hot exit? Only if users draft long prompts in Zapet.
+- Keep recovery/hot exit? Only if users draft long prompts in Gte.
 - Keep LSP automatic behavior? Usually no.
 - Keep syntax highlighting? Maybe yes for Markdown/code-heavy prompts, otherwise no.
-- Keep image paste system clipboard access? Yes for local desktop Zapet.
+- Keep image paste system clipboard access? Yes for local desktop Gte.

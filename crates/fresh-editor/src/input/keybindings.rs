@@ -16,25 +16,22 @@ use std::sync::atomic::{AtomicBool, Ordering};
 ///   In both cases, lowercase the character and preserve the existing
 ///   modifiers. This ensures CapsLock+Ctrl+A matches the `Ctrl+A` binding,
 ///   while Shift+P still matches the `Shift+P` binding.
-/// - macOS Command/Super is treated as Control so terminal hosts that forward
-///   Command chords can use the same editor bindings as Ctrl chords.
-/// - macOS Option+Arrow often arrives from terminals as Alt+F/Alt+B. Normalize
-///   those escape forms to the Ctrl+Arrow bindings before global menu mnemonics
-///   can interpret Alt+F as "File".
+/// - macOS Command/Super is preserved as its own modifier. Terminal hosts that
+///   forward Command chords should bind those chords explicitly; globally
+///   rewriting Command to Control makes terminal escape fallbacks like Ctrl+A
+///   indistinguishable from Cmd+Left.
+/// - macOS Option+Arrow can arrive from terminals as Alt+F/Alt+B. Normalize
+///   only those character escape forms to the Ctrl+Arrow bindings before
+///   global menu mnemonics can interpret Alt+F as "File". Keep physical
+///   Alt+Arrow events distinct so platform keymaps can bind them independently.
 fn normalize_key(code: KeyCode, modifiers: KeyModifiers) -> (KeyCode, KeyModifiers) {
-    let mut modifiers = modifiers;
-    if modifiers.contains(KeyModifiers::SUPER) {
-        modifiers.remove(KeyModifiers::SUPER);
-        modifiers.insert(KeyModifiers::CONTROL);
-    }
-
     if modifiers == KeyModifiers::ALT {
         match code {
-            KeyCode::Char('f') | KeyCode::Char('F') | KeyCode::Right => {
-                return (KeyCode::Right, KeyModifiers::CONTROL);
+            KeyCode::Char('f') | KeyCode::Char('F') => {
+                return (KeyCode::Right, KeyModifiers::CONTROL)
             }
-            KeyCode::Char('b') | KeyCode::Char('B') | KeyCode::Left => {
-                return (KeyCode::Left, KeyModifiers::CONTROL);
+            KeyCode::Char('b') | KeyCode::Char('B') => {
+                return (KeyCode::Left, KeyModifiers::CONTROL)
             }
             _ => {}
         }
@@ -2686,6 +2683,12 @@ impl KeybindingResolver {
 mod tests {
     use super::*;
 
+    fn config_with_keymap(map: &str) -> Config {
+        let mut config = Config::default();
+        config.active_keybinding_map = crate::config::KeybindingMapName(map.to_string());
+        config
+    }
+
     #[test]
     fn test_parse_key() {
         assert_eq!(KeybindingResolver::parse_key("enter"), Some(KeyCode::Enter));
@@ -3153,7 +3156,7 @@ mod tests {
 
     #[test]
     fn test_modifier_combinations() {
-        let config = Config::default();
+        let config = config_with_keymap("default");
         let resolver = KeybindingResolver::new(&config);
 
         // Test that modifier combinations are distinguished correctly
@@ -3174,27 +3177,85 @@ mod tests {
         // These should all be different actions (or at least distinguishable)
         assert_eq!(action_no_mod, Action::InsertChar('s'));
         assert_eq!(action_ctrl, Action::Save);
-        assert_eq!(action_super, Action::Save);
+        assert_eq!(action_super, Action::None);
         assert_eq!(action_shift, Action::InsertChar('s')); // Shift alone is still character input
                                                            // Ctrl+Shift+S is not bound by default, should return None
         assert_eq!(action_ctrl_shift, Action::None);
     }
 
     #[test]
-    fn test_super_resolves_as_control() {
-        let config = Config::default();
+    fn test_macos_command_bindings_do_not_rewrite_to_control() {
+        let config = config_with_keymap("macos");
         let resolver = KeybindingResolver::new(&config);
 
+        let ctrl_a = KeyEvent::new(KeyCode::Char('a'), KeyModifiers::CONTROL);
         let super_a = KeyEvent::new(KeyCode::Char('a'), KeyModifiers::SUPER);
+        let super_left = KeyEvent::new(KeyCode::Left, KeyModifiers::SUPER);
+        let super_home = KeyEvent::new(KeyCode::Home, KeyModifiers::SUPER);
+        let super_shift_left =
+            KeyEvent::new(KeyCode::Left, KeyModifiers::SUPER | KeyModifiers::SHIFT);
+        let super_s = KeyEvent::new(KeyCode::Char('s'), KeyModifiers::SUPER);
+        let super_v = KeyEvent::new(KeyCode::Char('v'), KeyModifiers::SUPER);
+
+        assert_eq!(
+            resolver.resolve(&ctrl_a, KeyContext::Normal),
+            Action::MoveLineStart
+        );
         assert_eq!(
             resolver.resolve(&super_a, KeyContext::Normal),
             Action::SelectAll
         );
+        assert_eq!(
+            resolver.resolve(&super_left, KeyContext::Normal),
+            Action::MoveLineStart
+        );
+        assert_eq!(
+            resolver.resolve(&super_home, KeyContext::Normal),
+            Action::MoveLineStart
+        );
+        assert_eq!(
+            resolver.resolve(&super_shift_left, KeyContext::Normal),
+            Action::SelectLineStart
+        );
+        assert_eq!(
+            resolver.resolve(&super_s, KeyContext::Normal),
+            Action::SaveAndQuit
+        );
+        assert_eq!(
+            resolver.resolve(&super_v, KeyContext::Normal),
+            Action::Paste
+        );
     }
 
     #[test]
-    fn test_option_arrow_escape_forms_resolve_as_control_arrow() {
-        let config = Config::default();
+    fn test_macos_option_delete_bindings_delete_words() {
+        let config = config_with_keymap("macos");
+        let resolver = KeybindingResolver::new(&config);
+
+        let option_backspace = KeyEvent::new(KeyCode::Backspace, KeyModifiers::ALT);
+        let option_delete = KeyEvent::new(KeyCode::Delete, KeyModifiers::ALT);
+
+        assert_eq!(
+            resolver.resolve(&option_backspace, KeyContext::Normal),
+            Action::DeleteWordBackward
+        );
+        assert_eq!(
+            resolver.resolve(&option_delete, KeyContext::Normal),
+            Action::DeleteWordForward
+        );
+        assert_eq!(
+            resolver.resolve(&option_backspace, KeyContext::Prompt),
+            Action::PromptDeleteWordBackward
+        );
+        assert_eq!(
+            resolver.resolve(&option_delete, KeyContext::Prompt),
+            Action::PromptDeleteWordForward
+        );
+    }
+
+    #[test]
+    fn test_default_option_arrow_preserves_physical_arrow_bindings_and_escape_forms() {
+        let config = config_with_keymap("default");
         let resolver = KeybindingResolver::new(&config);
 
         let alt_f = KeyEvent::new(KeyCode::Char('f'), KeyModifiers::ALT);
@@ -3208,7 +3269,7 @@ mod tests {
         );
         assert_eq!(
             resolver.resolve(&alt_right, KeyContext::Normal),
-            Action::MoveWordEnd
+            Action::NavigateForward
         );
         assert_eq!(
             resolver.resolve(&alt_b, KeyContext::Normal),
@@ -3216,7 +3277,51 @@ mod tests {
         );
         assert_eq!(
             resolver.resolve(&alt_left, KeyContext::Normal),
+            Action::NavigateBack
+        );
+        assert_eq!(
+            resolver.resolve(&alt_left, KeyContext::Prompt),
+            Action::PromptMoveWordLeft
+        );
+        assert_eq!(
+            resolver.resolve(&alt_right, KeyContext::Prompt),
+            Action::PromptMoveWordRight
+        );
+    }
+
+    #[test]
+    fn test_macos_option_left_moves_to_line_start_without_selecting_all() {
+        let config = config_with_keymap("macos");
+        let resolver = KeybindingResolver::new(&config);
+
+        let option_left = KeyEvent::new(KeyCode::Left, KeyModifiers::ALT);
+        let option_b = KeyEvent::new(KeyCode::Char('b'), KeyModifiers::ALT);
+        let ctrl_a = KeyEvent::new(KeyCode::Char('a'), KeyModifiers::CONTROL);
+        let super_a = KeyEvent::new(KeyCode::Char('a'), KeyModifiers::SUPER);
+
+        assert_eq!(
+            resolver.resolve(&option_left, KeyContext::Normal),
+            Action::MoveLineStart
+        );
+        assert_eq!(
+            resolver.resolve(&option_b, KeyContext::Normal),
             Action::MoveWordLeft
+        );
+        assert_eq!(
+            resolver.resolve(&ctrl_a, KeyContext::Normal),
+            Action::MoveLineStart
+        );
+        assert_eq!(
+            resolver.resolve(&super_a, KeyContext::Normal),
+            Action::SelectAll
+        );
+        assert_eq!(
+            resolver.resolve(&option_left, KeyContext::Prompt),
+            Action::PromptMoveStart
+        );
+        assert_eq!(
+            resolver.resolve(&option_b, KeyContext::Prompt),
+            Action::PromptMoveWordLeft
         );
     }
 

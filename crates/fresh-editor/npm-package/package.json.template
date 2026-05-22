@@ -1,14 +1,14 @@
 {
-  "name": "zapet",
+  "name": "gte",
   "version": "VERSION_PLACEHOLDER",
   "description": "zmux agent prompt editor tui",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sinelaw/fresh.git"
+    "url": "https://github.com/maddada/gte.git"
   },
   "license": "Apache-2.0",
   "bin": {
-    "zapet": "run-fresh.js"
+    "gte": "run-fresh.js"
   },
   "scripts": {
     "postinstall": "node install.js"

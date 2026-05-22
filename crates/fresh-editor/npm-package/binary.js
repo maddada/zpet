@@ -22,7 +22,7 @@ function getBinaryInfo() {
 
   return {
     ...info,
-    binaryName: platform === 'win32' ? 'zapet.exe' : 'zapet'
+    binaryName: platform === 'win32' ? 'gte.exe' : 'gte'
   };
 }
 
