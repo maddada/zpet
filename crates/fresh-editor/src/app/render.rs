@@ -1,6 +1,31 @@
 use super::lsp_status::compose_lsp_status;
 use super::*;
 
+/*
+CDXC:GteHotkeys 2026-05-23-09:06:
+Order shortcuts by row-major relationship so cut/copy/paste share a row when possible, undo/redo remain adjacent, and navigation/save actions stay grouped as the grid wraps.
+
+CDXC:GteHotkeys 2026-05-23-09:18:
+Shortcut keys must stay lowercase so they do not read as Shift-modified shortcuts, but labels should start with a capital letter for readability.
+
+CDXC:GteHotkeys 2026-05-23-10:05:
+The collapsed footer label should also start with a capital letter so the minimized state matches the expanded hotkey labels.
+*/
+const GTE_HOTKEY_HINTS: [(&str, &str); 12] = [
+    ("⌘x", "Cut"),
+    ("⌘c", "Copy"),
+    ("⌘v", "Paste"),
+    ("⌃v", "Paste img"),
+    ("⌘z", "Undo"),
+    ("⌘y", "Redo"),
+    ("⌘a", "Select all"),
+    ("⌘f", "Find"),
+    ("⌘p", "Commands"),
+    ("⌥←/→", "Word"),
+    ("⌘←/→", "Line"),
+    ("⌘g/⌘s", "Save"),
+];
+
 impl Editor {
     /// Render the editor to the terminal
     pub fn render(&mut self, frame: &mut Frame) {
@@ -150,7 +175,7 @@ impl Editor {
             .constraints(vec![
                 Constraint::Length(if self.menu_bar_visible { 1 } else { 0 }), // Menu bar
                 Constraint::Min(0),                                            // Main content area
-                Constraint::Length(self.gte_hotkey_hints_height(show_gte_hotkey_hints)),
+                Constraint::Length(self.gte_hotkey_hints_height(show_gte_hotkey_hints, size.width)),
                 Constraint::Length(
                     if !self.status_bar_visible || has_suggestions || has_file_browser {
                         0
@@ -394,7 +419,9 @@ impl Editor {
                     .constraints(vec![
                         Constraint::Length(if self.menu_bar_visible { 1 } else { 0 }),
                         Constraint::Min(0),
-                        Constraint::Length(self.gte_hotkey_hints_height(show_gte_hotkey_hints)),
+                        Constraint::Length(
+                            self.gte_hotkey_hints_height(show_gte_hotkey_hints, size.width),
+                        ),
                         Constraint::Length(
                             if !self.status_bar_visible || has_suggestions || has_file_browser {
                                 0
@@ -706,8 +733,10 @@ impl Editor {
         CDXC:GteHotkeys 2026-05-23-02:10:
         gte should expose the Mac-first terminal-editor shortcuts inline at
         the bottom of the TUI, not in a separate popup. Keep the footer as a
-        compact grid and make the whole area clickable so it can be minimized
-        without adding another visible shortcut.
+        compact responsive grid and make the whole area clickable so it can be
+        minimized without adding another visible shortcut. Keep the minimize
+        indicator pinned to the top-right so it does not consume the first
+        shortcut cell.
         */
         if show_gte_hotkey_hints {
             let area = main_chunks[hotkey_hints_idx];
@@ -2807,14 +2836,32 @@ impl Editor {
         self.prompt.is_none() && !has_suggestions && !has_file_browser
     }
 
-    fn gte_hotkey_hints_height(&self, show_hints: bool) -> u16 {
+    fn gte_hotkey_hints_height(&self, show_hints: bool, width: u16) -> u16 {
         if !show_hints {
             0
         } else if self.gte_hotkey_hints_collapsed {
             1
         } else {
-            2
+            self.gte_hotkey_hints_rows(width)
         }
+    }
+
+    fn gte_hotkey_hints_columns(&self, width: u16) -> u16 {
+        if width >= 96 {
+            4
+        } else if width >= 66 {
+            3
+        } else if width >= 36 {
+            2
+        } else {
+            1
+        }
+    }
+
+    fn gte_hotkey_hints_rows(&self, width: u16) -> u16 {
+        let item_count = GTE_HOTKEY_HINTS.len() as u16;
+        let columns = self.gte_hotkey_hints_columns(width).max(1);
+        item_count.div_ceil(columns)
     }
 
     fn render_gte_hotkey_hints(&self, frame: &mut Frame, area: ratatui::layout::Rect) {
@@ -2844,61 +2891,69 @@ impl Editor {
 
         frame.render_widget(Paragraph::new("").style(base_style), area);
 
+        let control_label = if self.gte_hotkey_hints_collapsed {
+            "[+]"
+        } else {
+            "[–]"
+        };
+        let control_width = control_label.chars().count() as u16;
+        let control_area = ratatui::layout::Rect {
+            x: area.x + area.width.saturating_sub(control_width),
+            y: area.y,
+            width: control_width.min(area.width),
+            height: 1,
+        };
+        frame.render_widget(
+            Paragraph::new(Span::styled(control_label, key_style)).style(base_style),
+            control_area,
+        );
+
+        let content_width = area.width.saturating_sub(control_width + 1);
+        let content_area = ratatui::layout::Rect {
+            x: area.x,
+            y: area.y,
+            width: content_width,
+            height: area.height,
+        };
+
         if self.gte_hotkey_hints_collapsed {
-            let line = Line::from(vec![
-                Span::styled("  ▸ ", key_style),
-                Span::styled("gte hotkeys", label_style),
-                Span::styled(
-                    "  click to show",
-                    Style::default().fg(self.theme.help_fg).bg(background),
-                ),
-            ]);
-            frame.render_widget(Paragraph::new(line).style(base_style), area);
+            let line = Line::from(vec![Span::styled("  Hotkeys", label_style)]);
+            frame.render_widget(Paragraph::new(line).style(base_style), content_area);
             return;
         }
 
-        let rows = [
-            [
-                ("▾ ⌘a", "Select All"),
-                ("⌘c", "Copy"),
-                ("⌘v", "Paste"),
-                ("⌘z", "Undo"),
-            ],
-            [
-                ("⌘y", "Redo"),
-                ("⌥← / ⌥→", "Jump 1 Word"),
-                ("⌘← / ⌘→", "Jump to Start/End"),
-                ("⌘g / ⌘s", "Save & Return"),
-            ],
-        ];
+        if content_area.width == 0 {
+            return;
+        }
 
+        let columns = self.gte_hotkey_hints_columns(area.width) as usize;
+        let rows = self.gte_hotkey_hints_rows(area.width) as usize;
         let row_areas = Layout::default()
             .direction(Direction::Vertical)
-            .constraints(vec![Constraint::Length(1), Constraint::Length(1)])
-            .split(area);
+            .constraints(vec![Constraint::Length(1); rows])
+            .split(content_area);
 
-        for (row_idx, row_items) in rows.iter().enumerate() {
+        for row_idx in 0..rows {
             if row_idx >= row_areas.len() {
                 break;
             }
             let col_areas = Layout::default()
                 .direction(Direction::Horizontal)
-                .constraints(vec![
-                    Constraint::Ratio(1, 4),
-                    Constraint::Ratio(1, 4),
-                    Constraint::Ratio(1, 4),
-                    Constraint::Ratio(1, 4),
-                ])
+                .constraints(vec![Constraint::Ratio(1, columns as u32); columns])
                 .split(row_areas[row_idx]);
 
-            for (col_idx, (key, label)) in row_items.iter().enumerate() {
+            for col_idx in 0..columns {
                 if col_idx >= col_areas.len() {
                     break;
                 }
+                let item_idx = row_idx * columns + col_idx;
+                let Some((key, label)) = GTE_HOTKEY_HINTS.get(item_idx) else {
+                    continue;
+                };
                 let line = Line::from(vec![
                     Span::styled("  ", base_style),
                     Span::styled(*key, key_style),
-                    Span::styled(" - ", label_style),
+                    Span::styled(" ", label_style),
                     Span::styled(*label, label_style),
                 ]);
                 frame.render_widget(Paragraph::new(line).style(base_style), col_areas[col_idx]);
@@ -2924,7 +2979,7 @@ impl Editor {
         let constraints = vec![
             Constraint::Length(if self.menu_bar_visible { 1 } else { 0 }),
             Constraint::Min(0),
-            Constraint::Length(self.gte_hotkey_hints_height(show_gte_hotkey_hints)),
+            Constraint::Length(self.gte_hotkey_hints_height(show_gte_hotkey_hints, width)),
             Constraint::Length(if self.status_bar_visible { 1 } else { 0 }), // status bar
             Constraint::Length(0), // search options (doesn't matter for layout)
             Constraint::Length(if self.prompt_line_visible { 1 } else { 0 }), // prompt line
