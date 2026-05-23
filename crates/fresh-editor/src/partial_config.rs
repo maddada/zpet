@@ -198,6 +198,7 @@ pub struct PartialEditorConfig {
     pub show_status_bar: Option<bool>,
     pub status_bar: Option<crate::config::StatusBarConfig>,
     pub show_prompt_line: Option<bool>,
+    pub gte_hotkey_hints_collapsed: Option<bool>,
     pub show_vertical_scrollbar: Option<bool>,
     pub show_horizontal_scrollbar: Option<bool>,
     pub show_tilde: Option<bool>,
@@ -306,6 +307,8 @@ impl Merge for PartialEditorConfig {
             self.status_bar = other.status_bar.clone();
         }
         self.show_prompt_line.merge_from(&other.show_prompt_line);
+        self.gte_hotkey_hints_collapsed
+            .merge_from(&other.gte_hotkey_hints_collapsed);
         self.show_vertical_scrollbar
             .merge_from(&other.show_vertical_scrollbar);
         self.show_horizontal_scrollbar
@@ -575,6 +578,7 @@ impl From<&crate::config::EditorConfig> for PartialEditorConfig {
             show_status_bar: Some(cfg.show_status_bar),
             status_bar: Some(cfg.status_bar.clone()),
             show_prompt_line: Some(cfg.show_prompt_line),
+            gte_hotkey_hints_collapsed: Some(cfg.gte_hotkey_hints_collapsed),
             show_vertical_scrollbar: Some(cfg.show_vertical_scrollbar),
             show_horizontal_scrollbar: Some(cfg.show_horizontal_scrollbar),
             show_tilde: Some(cfg.show_tilde),
@@ -725,6 +729,9 @@ impl PartialEditorConfig {
                 .status_bar
                 .unwrap_or_else(|| defaults.status_bar.clone()),
             show_prompt_line: self.show_prompt_line.unwrap_or(defaults.show_prompt_line),
+            gte_hotkey_hints_collapsed: self
+                .gte_hotkey_hints_collapsed
+                .unwrap_or(defaults.gte_hotkey_hints_collapsed),
             show_vertical_scrollbar: self
                 .show_vertical_scrollbar
                 .unwrap_or(defaults.show_vertical_scrollbar),

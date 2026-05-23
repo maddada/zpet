@@ -861,6 +861,15 @@ pub struct EditorConfig {
     #[schemars(extend("x-section" = "Display"))]
     pub show_prompt_line: bool,
 
+    /// Whether the built-in gte hotkey footer starts collapsed.
+    /// The footer can be toggled by clicking its top-right control, and the
+    /// runtime toggle persists this preference so the next gte launch restores
+    /// the same collapsed/expanded state.
+    /// Default: false
+    #[serde(default = "default_false")]
+    #[schemars(extend("x-section" = "Display"))]
+    pub gte_hotkey_hints_collapsed: bool,
+
     /// Whether the vertical scrollbar is visible in each split pane.
     /// Can be toggled at runtime via command palette or keybinding.
     /// Default: true
@@ -1457,6 +1466,11 @@ impl Default for EditorConfig {
             show_status_bar: false,
             status_bar: StatusBarConfig::default(),
             show_prompt_line: false,
+            /*
+            CDXC:GteHotkeys 2026-05-23-02:59:
+            The gte hotkey footer should remember whether the user collapsed or expanded it across launches. Persist the runtime click state through editor config rather than a separate state file.
+            */
+            gte_hotkey_hints_collapsed: false,
             show_vertical_scrollbar: true,
             show_horizontal_scrollbar: false,
             show_tilde: true,

@@ -14,7 +14,7 @@
     "theme": {
       "description": "Color theme name",
       "$ref": "#/$defs/ThemeOptions",
-      "default": "high-contrast"
+      "default": "dark"
     },
     "locale": {
       "description": "UI locale (language) for translations\nIf not set, auto-detected from environment (LC_ALL, LC_MESSAGES, LANG)",
@@ -30,21 +30,21 @@
       "description": "Editor behavior settings (indentation, line numbers, wrapping, etc.)",
       "$ref": "#/$defs/EditorConfig",
       "default": {
-        "animations": true,
-        "cursor_jump_animation": true,
+        "animations": false,
+        "cursor_jump_animation": false,
         "line_numbers": true,
         "relative_line_numbers": false,
-        "highlight_current_line": true,
+        "highlight_current_line": false,
         "highlight_current_column": false,
         "line_wrap": true,
         "wrap_indent": true,
         "wrap_column": null,
         "page_width": 80,
         "syntax_highlighting": true,
-        "show_menu_bar": true,
+        "show_menu_bar": false,
         "menu_bar_mnemonics": true,
-        "show_tab_bar": true,
-        "show_status_bar": true,
+        "show_tab_bar": false,
+        "show_status_bar": false,
         "status_bar": {
           "left": [
             "{remote}",
@@ -65,14 +65,15 @@
           ]
         },
         "show_prompt_line": false,
+        "gte_hotkey_hints_collapsed": false,
         "show_vertical_scrollbar": true,
         "show_horizontal_scrollbar": false,
         "show_tilde": true,
         "use_terminal_bg": false,
-        "set_window_title": true,
-        "cursor_style": "default",
+        "set_window_title": false,
+        "cursor_style": "blinking_bar",
         "rulers": [],
-        "whitespace_show": true,
+        "whitespace_show": false,
         "whitespace_spaces_leading": false,
         "whitespace_spaces_inner": false,
         "whitespace_spaces_trailing": false,
@@ -86,7 +87,7 @@
         "auto_surround": true,
         "scroll_offset": 3,
         "default_line_ending": "lf",
-        "trim_trailing_whitespace_on_save": false,
+        "trim_trailing_whitespace_on_save": true,
         "ensure_final_newline_on_save": false,
         "highlight_matching_brackets": true,
         "rainbow_brackets": true,
@@ -179,7 +180,7 @@
     "active_keybinding_map": {
       "description": "Active keybinding map name",
       "$ref": "#/$defs/KeybindingMapOptions",
-      "default": "default"
+      "default": "macos"
     },
     "languages": {
       "description": "Per-language configuration overrides (tab size, formatters, etc.)",
@@ -403,6 +404,12 @@
         },
         "show_prompt_line": {
           "description": "Whether the prompt line is always visible.\nThe prompt line is the bottom-most line used for search, file open, and other prompts.\nWhen `false` (the default), the prompt line auto-hides — it only appears\nwhile a prompt is active and disappears again once the prompt closes.\nWhen `true`, the prompt line is always reserved at the bottom of the screen.\nDefault: false",
+          "type": "boolean",
+          "default": false,
+          "x-section": "Display"
+        },
+        "gte_hotkey_hints_collapsed": {
+          "description": "Whether the built-in gte hotkey footer starts collapsed.\nThe footer can be toggled by clicking its top-right control, and the\nruntime toggle persists this preference so the next gte launch restores\nthe same collapsed/expanded state.\nDefault: false",
           "type": "boolean",
           "default": false,
           "x-section": "Display"
@@ -1497,7 +1504,7 @@
           "default": {
             "max_memory_percent": 50,
             "max_cpu_percent": 90,
-            "enabled": true
+            "enabled": false
           },
           "x-section": "Advanced",
           "x-order": 15

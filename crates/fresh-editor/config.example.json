@@ -10,6 +10,7 @@
     "scroll_offset": 3,
     "syntax_highlighting": true,
     "highlight_current_line": false,
+    "gte_hotkey_hints_collapsed": false,
     "line_wrap": true,
     "highlight_timeout_ms": 5,
     "snapshot_interval": 100,

@@ -1909,7 +1909,13 @@ impl Editor {
             return None;
         }
 
-        self.gte_hotkey_hints_collapsed = !self.gte_hotkey_hints_collapsed;
+        let new_value = !self.gte_hotkey_hints_collapsed;
+        self.config_mut().editor.gte_hotkey_hints_collapsed = new_value;
+        self.gte_hotkey_hints_collapsed = new_value;
+        self.persist_config_change(
+            "/editor/gte_hotkey_hints_collapsed",
+            serde_json::Value::Bool(new_value),
+        );
         Some(Ok(()))
     }
 

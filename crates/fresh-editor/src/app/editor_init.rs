@@ -726,6 +726,7 @@ impl Editor {
         let show_tab_bar = config.editor.show_tab_bar;
         let show_status_bar = config.editor.show_status_bar;
         let show_prompt_line = config.editor.show_prompt_line;
+        let gte_hotkey_hints_collapsed = config.editor.gte_hotkey_hints_collapsed;
 
         // Start periodic update checker if enabled (also sends daily telemetry)
         let update_checker = if check_for_updates {
@@ -834,7 +835,7 @@ impl Editor {
             menu_bar_auto_shown: false,
             tab_bar_visible: show_tab_bar,
             status_bar_visible: show_status_bar,
-            gte_hotkey_hints_collapsed: false,
+            gte_hotkey_hints_collapsed,
             prompt_line_visible: show_prompt_line,
             mouse_enabled: true,
             same_buffer_scroll_sync: false,

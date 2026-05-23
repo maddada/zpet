@@ -30,9 +30,12 @@
       "description": "Editor behavior settings (indentation, line numbers, wrapping, etc.)",
       "$ref": "#/$defs/EditorConfig",
       "default": {
+        "animations": false,
+        "cursor_jump_animation": false,
         "line_numbers": true,
         "relative_line_numbers": false,
         "highlight_current_line": false,
+        "highlight_current_column": false,
         "line_wrap": true,
         "wrap_indent": true,
         "wrap_column": null,
@@ -42,11 +45,32 @@
         "menu_bar_mnemonics": true,
         "show_tab_bar": false,
         "show_status_bar": false,
+        "status_bar": {
+          "left": [
+            "{remote}",
+            "{filename}",
+            "{cursor}",
+            "{diagnostics}",
+            "{cursor_count}",
+            "{messages}"
+          ],
+          "right": [
+            "{line_ending}",
+            "{encoding}",
+            "{language}",
+            "{lsp}",
+            "{warnings}",
+            "{update}",
+            "{palette}"
+          ]
+        },
         "show_prompt_line": false,
+        "gte_hotkey_hints_collapsed": false,
         "show_vertical_scrollbar": true,
         "show_horizontal_scrollbar": false,
         "show_tilde": true,
         "use_terminal_bg": false,
+        "set_window_title": false,
         "cursor_style": "blinking_bar",
         "rulers": [],
         "whitespace_show": false,
@@ -80,6 +104,9 @@
         "auto_save_enabled": false,
         "auto_save_interval_secs": 30,
         "hot_exit": true,
+        "restore_previous_session": true,
+        "skip_session_restore_when_files_passed": true,
+        "auto_create_empty_buffer_on_last_buffer_close": true,
         "recovery_enabled": true,
         "auto_recovery_save_interval_secs": 2,
         "auto_revert_poll_interval_ms": 2000,
@@ -104,7 +131,11 @@
         "show_hidden": false,
         "show_gitignored": false,
         "custom_ignore_patterns": [],
-        "width": 0.30000001192092896
+        "width": "30%",
+        "preview_tabs": true,
+        "side": "left",
+        "auto_open_on_last_buffer_close": true,
+        "follow_active_buffer": false
       }
     },
     "file_browser": {
@@ -126,7 +157,8 @@
       "description": "Terminal settings",
       "$ref": "#/$defs/TerminalConfig",
       "default": {
-        "jump_to_end_on_output": true
+        "jump_to_end_on_output": true,
+        "shell": null
       }
     },
     "keybindings": {
@@ -148,7 +180,7 @@
     "active_keybinding_map": {
       "description": "Active keybinding map name",
       "$ref": "#/$defs/KeybindingMapOptions",
-      "default": "default"
+      "default": "macos"
     },
     "languages": {
       "description": "Per-language configuration overrides (tab size, formatters, etc.)",
@@ -158,17 +190,14 @@
       },
       "default": {}
     },
-    "fallback": {
-      "description": "Fallback configuration for files whose type cannot be detected.\nApplied when no extension, filename, glob, or built-in detection matches.\nUseful for setting a default grammar (e.g., \"bash\") and comment_prefix\nfor unrecognized .conf, .rc, .rules, etc. files.",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/LanguageConfig"
-        },
-        {
-          "type": "null"
-        }
+    "default_language": {
+      "description": "Default language for files whose type cannot be detected.\nMust reference a key in the `languages` map (e.g., \"bash\").\nApplied when no extension, filename, glob, or built-in detection matches.\nThe referenced language's full configuration (grammar, comment_prefix,\ntab_size, etc.) is used for unrecognized files.",
+      "type": [
+        "string",
+        "null"
       ],
-      "default": null
+      "default": null,
+      "x-enum-from": "/languages"
     },
     "lsp": {
       "description": "LSP server configurations by language.\nEach language maps to one or more server configs (multi-LSP support).\nAccepts both single-object and array forms for backwards compatibility.",
@@ -221,7 +250,8 @@
         "dark",
         "light",
         "high-contrast",
-        "nostalgia"
+        "nostalgia",
+        "terminal"
       ]
     },
     "LocaleOptions": {
@@ -248,6 +278,18 @@
       "description": "Editor behavior configuration",
       "type": "object",
       "properties": {
+        "animations": {
+          "description": "Enable frame-buffer animations (tab-switch slides, dashboard\nbringup, plugin-driven effects). When `false`, every animation\ncall is a no-op: the UI is fully static and each render lands\nthe final frame immediately. Useful on slow terminals, over\nSSH, or for users who prefer no motion.",
+          "type": "boolean",
+          "default": true,
+          "x-section": "Display"
+        },
+        "cursor_jump_animation": {
+          "description": "Enable the cursor-jump trail animation on long cursor moves\n(search jumps, go-to-definition, pane switches). Has no effect\nwhen `animations` is `false`.",
+          "type": "boolean",
+          "default": true,
+          "x-section": "Display"
+        },
         "line_numbers": {
           "description": "Show line numbers in the gutter (default for new buffers)",
           "type": "boolean",
@@ -262,6 +304,12 @@
         },
         "highlight_current_line": {
           "description": "Highlight the line containing the cursor",
+          "type": "boolean",
+          "default": true,
+          "x-section": "Display"
+        },
+        "highlight_current_column": {
+          "description": "Highlight the column containing the cursor",
           "type": "boolean",
           "default": false,
           "x-section": "Display"
@@ -307,9 +355,9 @@
           "x-section": "Display"
         },
         "show_menu_bar": {
-          "description": "Whether the menu bar is visible by default.\nThe menu bar provides access to menus (File, Edit, View, etc.) at the top of the screen.\nCan be toggled at runtime via command palette or keybinding.\nDefault: false",
+          "description": "Whether the menu bar is visible by default.\nThe menu bar provides access to menus (File, Edit, View, etc.) at the top of the screen.\nCan be toggled at runtime via command palette or keybinding.\nDefault: true",
           "type": "boolean",
-          "default": false,
+          "default": true,
           "x-section": "Display"
         },
         "menu_bar_mnemonics": {
@@ -319,19 +367,49 @@
           "x-section": "Display"
         },
         "show_tab_bar": {
-          "description": "Whether the tab bar is visible by default.\nThe tab bar shows open files in each split pane.\nCan be toggled at runtime via command palette or keybinding.\nDefault: false",
+          "description": "Whether the tab bar is visible by default.\nThe tab bar shows open files in each split pane.\nCan be toggled at runtime via command palette or keybinding.\nDefault: true",
           "type": "boolean",
-          "default": false,
+          "default": true,
           "x-section": "Display"
         },
         "show_status_bar": {
-          "description": "Whether the status bar is visible by default.\nThe status bar shows file info, cursor position, and editor status at the bottom of the screen.\nCan be toggled at runtime via command palette or keybinding.\nDefault: false",
+          "description": "Whether the status bar is visible by default.\nThe status bar shows file info, cursor position, and editor status at the bottom of the screen.\nCan be toggled at runtime via command palette or keybinding.\nDefault: true",
+          "type": "boolean",
+          "default": true,
+          "x-section": "Display"
+        },
+        "status_bar": {
+          "description": "Status bar layout and element configuration.\nControls which elements appear in the status bar and how they are arranged.",
+          "$ref": "#/$defs/StatusBarConfig",
+          "default": {
+            "left": [
+              "{remote}",
+              "{filename}",
+              "{cursor}",
+              "{diagnostics}",
+              "{cursor_count}",
+              "{messages}"
+            ],
+            "right": [
+              "{line_ending}",
+              "{encoding}",
+              "{language}",
+              "{lsp}",
+              "{warnings}",
+              "{update}",
+              "{palette}"
+            ]
+          },
+          "x-section": "Status Bar"
+        },
+        "show_prompt_line": {
+          "description": "Whether the prompt line is always visible.\nThe prompt line is the bottom-most line used for search, file open, and other prompts.\nWhen `false` (the default), the prompt line auto-hides — it only appears\nwhile a prompt is active and disappears again once the prompt closes.\nWhen `true`, the prompt line is always reserved at the bottom of the screen.\nDefault: false",
           "type": "boolean",
           "default": false,
           "x-section": "Display"
         },
-        "show_prompt_line": {
-          "description": "Whether the prompt line is visible by default.\nThe prompt line is the bottom-most line used for command input, search, file open, etc.\nWhen hidden, the prompt line only appears when a prompt is active.\nCan be toggled at runtime via command palette or keybinding.\nDefault: false",
+        "gte_hotkey_hints_collapsed": {
+          "description": "Whether the built-in gte hotkey footer starts collapsed.\nThe footer can be toggled by clicking its top-right control, and the\nruntime toggle persists this preference so the next gte launch restores\nthe same collapsed/expanded state.\nDefault: false",
           "type": "boolean",
           "default": false,
           "x-section": "Display"
@@ -360,10 +438,16 @@
           "default": false,
           "x-section": "Display"
         },
+        "set_window_title": {
+          "description": "Update the terminal window title (via OSC 2) to reflect the active buffer.\nWhen enabled, Fresh sets the terminal/tab title to \"<file> — Fresh\" as\nyou switch buffers. Harmless on terminals that don't understand the\nescape sequence — they silently ignore it.\nDefault: true",
+          "type": "boolean",
+          "default": true,
+          "x-section": "Display"
+        },
         "cursor_style": {
-          "description": "Cursor style for the terminal cursor.\nOptions: blinking_block, steady_block, blinking_bar, steady_bar, blinking_underline, steady_underline\nDefault: blinking_bar",
+          "description": "Cursor style for the terminal cursor.\nOptions: blinking_block, steady_block, blinking_bar, steady_bar, blinking_underline, steady_underline\nDefault: blinking_block",
           "$ref": "#/$defs/CursorStyle",
-          "default": "blinking_bar",
+          "default": "default",
           "x-section": "Display"
         },
         "rulers": {
@@ -378,9 +462,9 @@
           "x-section": "Display"
         },
         "whitespace_show": {
-          "description": "Master toggle for whitespace indicator visibility.\nWhen disabled, no whitespace indicators are shown regardless\nof the per-position settings below.\nDefault: false",
+          "description": "Master toggle for whitespace indicator visibility.\nWhen disabled, no whitespace indicators (·, →) are shown regardless\nof the per-position settings below.\nDefault: true",
           "type": "boolean",
-          "default": false,
+          "default": true,
           "x-section": "Whitespace"
         },
         "whitespace_spaces_leading": {
@@ -466,9 +550,9 @@
           "x-section": "Editing"
         },
         "trim_trailing_whitespace_on_save": {
-          "description": "Remove trailing whitespace from lines when saving.\nDefault: true",
+          "description": "Remove trailing whitespace from lines when saving.\nDefault: false",
           "type": "boolean",
-          "default": true,
+          "default": false,
           "x-section": "Editing"
         },
         "ensure_final_newline_on_save": {
@@ -575,6 +659,24 @@
           "default": true,
           "x-section": "Recovery"
         },
+        "restore_previous_session": {
+          "description": "Whether to auto-open previously opened files (session restore) when\nstarting Fresh in a directory.  When enabled (the default), tabs,\nsplits, cursor positions and the file explorer state are restored\nfrom the last clean exit in the same working directory.  When\ndisabled, Fresh starts with a clean workspace.  The workspace file\non disk is still written on exit, so re-enabling this setting picks\nup whatever state was saved at the most recent clean exit.  The\n`--no-restore` CLI flag is a stronger override: it skips both\nrestoring and saving the workspace.\nDefault: true",
+          "type": "boolean",
+          "default": true,
+          "x-section": "Startup"
+        },
+        "skip_session_restore_when_files_passed": {
+          "description": "When Fresh is launched with one or more file arguments (e.g.\n`fresh src/main.rs README.md`), skip the workspace session restore\nand open only the files passed on the command line. Hot-exit\ncontent (unsaved modified files and unnamed `[No Name]` buffers\nwith content) is still restored so in-progress work is never lost.\nPure-directory invocations (`fresh some/dir`) and bare invocations\n(`fresh` with no args) still restore the previous session normally.\nDisable this option to keep the legacy behavior of always\nrestoring the previous session even when files are passed.\nDefault: true",
+          "type": "boolean",
+          "default": true,
+          "x-section": "Startup"
+        },
+        "auto_create_empty_buffer_on_last_buffer_close": {
+          "description": "Whether to auto-create a fresh empty `[No Name]` buffer when the\nlast open buffer is closed. When `false`, the editor still creates\nan internal placeholder buffer (it always needs at least one) but\nhides it from the tab bar so the workspace looks blank. Combined\nwith `file_explorer.auto_open_on_last_buffer_close = false`, this\ngives a fully blank workspace where nothing opens automatically.\nDefault: true",
+          "type": "boolean",
+          "default": true,
+          "x-section": "Startup"
+        },
         "recovery_enabled": {
           "description": "Whether to enable file recovery (Emacs-style auto-save)\nWhen enabled, buffers are periodically saved to recovery files\nso they can be recovered if the editor crashes.",
           "type": "boolean",
@@ -679,6 +781,116 @@
         }
       }
     },
+    "StatusBarConfig": {
+      "description": "Status bar layout and element configuration.\n\nControls which elements appear in the status bar and how they are arranged.\nElements are placed in left and right containers and can be freely reordered.\n\nExample config:\n```json\n{\n  \"status_bar\": {\n    \"left\": [\"{filename}\", \"{cursor:compact}\"],\n    \"right\": [\"{language}\", \"{encoding}\", \"{line_ending}\"]\n  }\n}\n```",
+      "type": "object",
+      "properties": {
+        "left": {
+          "description": "Elements shown on the left side of the status bar.\nDefault: [\"{filename}\", \"{cursor}\", \"{diagnostics}\", \"{cursor_count}\", \"{messages}\"]",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StatusBarElement"
+          },
+          "default": [
+            "{remote}",
+            "{filename}",
+            "{cursor}",
+            "{diagnostics}",
+            "{cursor_count}",
+            "{messages}"
+          ],
+          "x-section": "Status Bar",
+          "x-dual-list-sibling": "/editor/status_bar/right"
+        },
+        "right": {
+          "description": "Elements shown on the right side of the status bar.\nDefault: [\"{line_ending}\", \"{encoding}\", \"{language}\", \"{lsp}\", \"{warnings}\", \"{update}\", \"{palette}\"]",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StatusBarElement"
+          },
+          "default": [
+            "{line_ending}",
+            "{encoding}",
+            "{language}",
+            "{lsp}",
+            "{warnings}",
+            "{update}",
+            "{palette}"
+          ],
+          "x-section": "Status Bar",
+          "x-dual-list-sibling": "/editor/status_bar/left"
+        }
+      }
+    },
+    "StatusBarElement": {
+      "type": "string",
+      "x-dual-list-options": [
+        {
+          "value": "{filename}",
+          "name": "Filename"
+        },
+        {
+          "value": "{cursor}",
+          "name": "Cursor"
+        },
+        {
+          "value": "{cursor:compact}",
+          "name": "Cursor (compact)"
+        },
+        {
+          "value": "{diagnostics}",
+          "name": "Diagnostics"
+        },
+        {
+          "value": "{cursor_count}",
+          "name": "Cursor Count"
+        },
+        {
+          "value": "{messages}",
+          "name": "Messages"
+        },
+        {
+          "value": "{chord}",
+          "name": "Chord"
+        },
+        {
+          "value": "{line_ending}",
+          "name": "Line Ending"
+        },
+        {
+          "value": "{encoding}",
+          "name": "Encoding"
+        },
+        {
+          "value": "{language}",
+          "name": "Language"
+        },
+        {
+          "value": "{lsp}",
+          "name": "LSP"
+        },
+        {
+          "value": "{warnings}",
+          "name": "Warnings"
+        },
+        {
+          "value": "{update}",
+          "name": "Update"
+        },
+        {
+          "value": "{palette}",
+          "name": "Palette"
+        },
+        {
+          "value": "{clock}",
+          "name": "Clock"
+        },
+        {
+          "value": "{remote}",
+          "name": "Remote Indicator"
+        }
+      ]
+    },
     "CursorStyle": {
       "description": "Terminal cursor style",
       "type": "string",
@@ -730,12 +942,44 @@
           "default": []
         },
         "width": {
-          "description": "Width of file explorer as percentage (0.0 to 1.0)",
-          "type": "number",
-          "format": "float",
-          "default": 0.30000001192092896
+          "description": "File explorer width. Either a percent (`\"30%\"`, 0–100) or an\nabsolute column count (`\"24\"`). Legacy numeric forms are still\naccepted on read: a bare integer is treated as percent, and a\nfractional number in `[0, 1]` is treated as a legacy percent\nfraction (e.g. `0.3` → 30%).",
+          "$ref": "#/$defs/ExplorerWidth",
+          "default": "30%"
+        },
+        "preview_tabs": {
+          "description": "Open files in a \"preview\" (ephemeral) tab on single-click in the\nfile explorer. The preview tab is replaced by the next single-click\ninstead of accumulating tabs. Editing the file, double-clicking\n(or pressing Enter) on it in the explorer, or dragging its tab\npromotes the tab to a permanent tab.\nDefault: true",
+          "type": "boolean",
+          "default": true
+        },
+        "side": {
+          "description": "Which side of the screen to show the file explorer on.\nDefault: left",
+          "$ref": "#/$defs/FileExplorerSide",
+          "default": "left"
+        },
+        "auto_open_on_last_buffer_close": {
+          "description": "Automatically focus the file explorer when the last buffer is\nclosed. Set to `false` for a \"blank workspace\" workflow where\nnothing opens automatically and the user explicitly invokes the\nfile explorer (e.g. via keybinding or command palette).\nDefault: true",
+          "type": "boolean",
+          "default": true
+        },
+        "follow_active_buffer": {
+          "description": "When the file explorer sidebar is open, automatically expand the\ntree and highlight the file that corresponds to the active buffer\nwhenever you switch tabs. Set to `true` to keep the explorer\nselection in sync with the active tab.\nDefault: false",
+          "type": "boolean",
+          "default": false
         }
       }
+    },
+    "ExplorerWidth": {
+      "description": "Either a percent like \"30%\" (0–100) or an absolute column count like \"24\".",
+      "type": "string",
+      "pattern": "^(100%|[1-9]?[0-9]%|\\d+)$"
+    },
+    "FileExplorerSide": {
+      "description": "Side placement for the file explorer panel.",
+      "type": "string",
+      "enum": [
+        "left",
+        "right"
+      ]
     },
     "FileBrowserConfig": {
       "description": "File browser configuration (for Open File dialog)",
@@ -772,8 +1016,41 @@
           "description": "When viewing terminal scrollback and new output arrives,\nautomatically jump back to terminal mode (default: true)",
           "type": "boolean",
           "default": true
+        },
+        "shell": {
+          "description": "Override the shell used by the integrated terminal.\n\nWhen unset (the default), Fresh launches the shell named by the\n`$SHELL` environment variable (or the platform default if `$SHELL`\nis empty). Set this to run a different program — for example a\nwrapper script that forces an interactive shell — without having\nto change `$SHELL` for the whole process, which other features\nsuch as `format_on_save` also depend on.\n\nOnly affects local authorities; plugin-provided authorities\n(e.g. `docker exec`) keep their own wrapper.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TerminalShellConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       }
+    },
+    "TerminalShellConfig": {
+      "description": "Explicit shell command + args for the integrated terminal.",
+      "type": "object",
+      "properties": {
+        "command": {
+          "description": "Executable to launch (e.g. `/usr/bin/fish`, `bash`, or a wrapper\nscript). Resolved via `$PATH` when not absolute.",
+          "type": "string"
+        },
+        "args": {
+          "description": "Arguments passed before any user input.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        }
+      },
+      "required": [
+        "command"
+      ]
     },
     "Keybinding": {
       "description": "Keybinding definition",
@@ -1227,7 +1504,7 @@
           "default": {
             "max_memory_percent": 50,
             "max_cpu_percent": 90,
-            "enabled": true
+            "enabled": false
           },
           "x-section": "Advanced",
           "x-order": 15
