@@ -1,5 +1,13 @@
 # Release Notes
 
+## 0.3.10
+
+### Improvements
+
+* **Responsive hotkey footer**: The built-in gte hotkey panel now wraps into a width-aware grid, keeps related shortcuts together, uses a top-right collapse control, and shows clearer capitalized labels.
+
+* **Persistent hotkey footer state**: Collapsing or expanding the gte hotkey panel is now saved and restored on the next launch.
+
 ## 0.3.9
 
 ### Improvements
